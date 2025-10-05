@@ -1,0 +1,5 @@
+node_modules/
+fau-results/
+*.log
+.env
+dist/
