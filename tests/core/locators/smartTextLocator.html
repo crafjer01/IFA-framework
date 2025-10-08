@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Adaptive Locator Test Page</title>
+    <style>
+      .container {
+        padding: 20px;
+      }
+      .button {
+        padding: 10px;
+        margin: 5px;
+        background: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      .input {
+        padding: 8px;
+        margin: 5px;
+        border: 1px solid #ccc;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Button elements -->
+      <button id="login-btn" class="button">Login Button</button>
+      <button id="submit-btn" class="button">Submit</button>
+      <input type="button" value="Save Changes" />
+      <input type="submit" value="Send Form" />
+      <a href="#" role="button">Link Button</a>
+
+      <!-- Input elements -->
+      <input type="text" id="email" placeholder="Enter your email address" />
+      <input type="password" id="password" placeholder="Password" />
+      <textarea id="message" placeholder="Type your message"></textarea>
+      <input type="text" id="username" aria-label="Username field" />
+
+      <!-- Select elements -->
+      <select id="country">
+        <option value="">Select country</option>
+        <option value="es">Spain</option>
+        <option value="fr">France</option>
+        <option value="us">United States</option>
+      </select>
+
+      <!-- Elements with various text patterns -->
+      <div id="partial-text">This is a submit button</div>
+      <span title="Click to login">🔐</span>
+      <label for="email">Email Field</label>
+      <p>Some random text content</p>
+
+      <!-- ARIA elements -->
+      <div role="button" aria-label="Close dialog">×</div>
+      <div role="textbox" aria-label="Search box" contenteditable="true"></div>
+
+      <!-- Dynamic content simulation -->
+      <button id="dynamic-btn" class="button">Loading...</button>
+
+      <!-- Multilingual content -->
+      <button id="es-btn" class="button">Iniciar Sesión</button>
+      <button id="fr-btn" class="button">Se Connecter</button>
+    </div>
+
+    <script>
+      // Simulate dynamic content
+      setTimeout(() => {
+        document.getElementById("dynamic-btn").textContent = "Click Me";
+      }, 1000);
+    </script>
+  </body>
+</html>
