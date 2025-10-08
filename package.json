@@ -1,6 +1,6 @@
 {
-  "name": "ifa",
-  "version": "0.1.0",
+  "name": "ifa-framework",
+  "version": "0.1.1",
   "description": "IDCAS web automation framework with TypeScript and Playwright",
   "main": "dist/index.js",
   "type": "module",
@@ -20,15 +20,19 @@
     }
   },
   "files": [
-    "dist", "bin"
+    "dist",
+    "bin"
   ],
   "scripts": {
-    "build": "tsc",
+    "clean": "rm -rf dist bin",
+    "copy:bin": "mkdir bin && cp src/bin/ifa.js bin/ifa.js",
+    "compile": "tsc",
     "dev": "tsc --watch",
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint src/**/*.ts",
     "start": "node dist/cli.js init",
+    "build": "npm run clean && npm run compile && npm run copy:bin",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
