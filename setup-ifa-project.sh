@@ -1,8 +1,8 @@
-# setup-fau-project.sh - Script to create complete FAU Framework project structure
+# setup-ifa-project.sh - Script to create complete IFA  Framework project structure
 
 #!/bin/bash
 
-echo "🚀 Setting up FAU Framework project structure..."
+echo "🚀 Setting up IFA Framework project structure..."
 
 # Create main directories
 mkdir -p src/{core,plugins,utils}
@@ -17,10 +17,10 @@ echo "📁 Creating project structure..."
 # Core source files
 cat > src/core/index.ts << 'EOF'
 // Core exports
-export { FauEngine } from './FauEngine';
+export { IFAEngine } from './IFAEngine';
 export { ConfigManager } from './ConfigManager';
 export { Logger } from './Logger';
-export { FauPageWrapper } from './FauPageWrapper';
+export { IFAPageWrapper } from './IFAPageWrapper';
 export { ReportingEngine } from './ReportingEngine';
 export * from './types';
 EOF
@@ -88,7 +88,7 @@ export function retry<T>(
 EOF
 
 # Binary executable
-cat > bin/fau.js << 'EOF'
+cat > bin/ifa.js << 'EOF'
 #!/usr/bin/env node
 
 const path = require('path');
@@ -103,20 +103,20 @@ if (fs.existsSync(path.join(__dirname, '../dist/cli.js'))) {
   require('ts-node/register');
   cliPath = path.join(__dirname, '../src/cli.ts');
 } else {
-  console.error('FAU CLI not found. Please run npm run build first.');
+  console.error('IFA CLI not found. Please run npm run build first.');
   process.exit(1);
 }
 
 require(cliPath);
 EOF
 
-chmod +x bin/fau.js
+chmod +x bin/ifa.js
 
 # Example test files
-cat > tests/examples/basic-navigation.fau.ts << 'EOF'
-import { FauPage } from '../../src';
+cat > tests/examples/basic-navigation.ifa.ts << 'EOF'
+import { IFAPage } from '../../src';
 
-export default async function basicNavigationTest(page: FauPage) {
+export default async function basicNavigationTest(page: IFAPage) {
   console.log('🧪 Running basic navigation test...');
   
   // Navigate to example site
@@ -129,16 +129,16 @@ export default async function basicNavigationTest(page: FauPage) {
   }
   
   // Take screenshot for evidence
-  await page.screenshot({ path: 'fau-results/screenshots/basic-navigation.png' });
+  await page.screenshot({ path: ifa-results/screenshots/basic-navigation.png' });
   
   console.log('✅ Basic navigation test passed');
 }
 EOF
 
-cat > tests/examples/smart-interactions.fau.ts << 'EOF'
-import { FauPage } from '../../src';
+cat > tests/examples/smart-interactions.ifa.ts << 'EOF'
+import {IFAPage } from '../../src';
 
-export default async function smartInteractionsTest(page: FauPage) {
+export default async function smartInteractionsTest(page: IFAPage) {
   console.log('🧪 Running smart interactions test...');
   
   await page.goto('https://httpbin.org/forms/post');
@@ -150,38 +150,38 @@ export default async function smartInteractionsTest(page: FauPage) {
     await page.smartFill('custemail', 'john@example.com');
     
     // Take screenshot before submission
-    await page.screenshot({ path: 'fau-results/screenshots/form-filled.png' });
+    await page.screenshot({ path: ifa-results/screenshots/form-filled.png' });
     
     console.log('✅ Smart interactions test passed');
   } catch (error) {
     console.log('ℹ️  Smart interactions partially implemented in Sprint 1');
-    await page.screenshot({ path: 'fau-results/screenshots/smart-interactions-error.png' });
+    await page.screenshot({ path: 'ifa-results/screenshots/smart-interactions-error.png' });
   }
 }
 EOF
 
 # Integration tests
 cat > tests/integration/framework.test.ts << 'EOF'
-import { FauEngine, createFauEngine } from '../../src';
+import { IFAEngine, createIFAEngine } from '../../src';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 
-describe('FAU Framework Integration', () => {
+describe('IFA Framework Integration', () => {
   beforeAll(async () => {
     // Ensure test directories exist
-    await fs.ensureDir('fau-results/screenshots');
-    await fs.ensureDir('fau-results/reports');
+    await fs.ensureDir('ifa-results/screenshots');
+    await fs.ensureDir('ifa-results/reports');
   });
 
   afterAll(async () => {
     // Cleanup test artifacts
     if (process.env.CLEANUP_TESTS) {
-      await fs.remove('fau-results');
+      await fs.remove('ifa-results');
     }
   });
 
   test('should run complete test workflow', async () => {
-    const engine = await createFauEngine({
+    const engine = await createIFAEngine({
       browser: { headless: true },
       logging: { level: 'info' }
     });
@@ -191,7 +191,7 @@ describe('FAU Framework Integration', () => {
         name: 'Navigation Test',
         fn: async (page) => {
           await page.goto('https://example.com');
-          await page.screenshot({ path: 'fau-results/screenshots/navigation.png' });
+          await page.screenshot({ path: 'ifa-results/screenshots/navigation.png' });
         }
       },
       {
@@ -208,7 +208,7 @@ describe('FAU Framework Integration', () => {
     expect(results.every(r => r.status === 'passed')).toBe(true);
     
     // Verify reports were generated
-    expect(await fs.pathExists('fau-results/reports/index.html')).toBe(true);
+    expect(await fs.pathExists('ifa-results/reports/index.html')).toBe(true);
     
     await engine.close();
   }, 60000);
@@ -255,12 +255,12 @@ export default defineConfig({
   }
 });`;
 
-  await fs.writeFile('example-project/fau.config.ts', exampleConfig);
+  await fs.writeFile('example-project/ifa.config.ts', exampleConfig);
   
   console.log('✅ Development setup complete!');
   console.log('\n🚀 Next steps:');
   console.log('1. cd example-project');
-  console.log('2. node ../bin/fau.js run');
+  console.log('2. node ../bin/ifa.js run');
 }
 
 setup().catch(console.error);
@@ -272,7 +272,7 @@ const { execSync } = require('child_process');
 const fs = require('fs-extra');
 
 async function build() {
-  console.log('🏗️  Building FAU Framework...');
+  console.log('🏗️  Building IFA Framework...');
   
   // Clean previous build
   await fs.remove('dist');
@@ -296,9 +296,9 @@ async function build() {
 build().catch(console.error);
 EOF
 
-# Template files for fau init
-cat > templates/basic/fau.config.ts << 'EOF'
-import { defineConfig } from 'fau-framework';
+# Template files for ifa init
+cat > templates/basic/ifa.config.ts << 'EOF'
+import { defineConfig } from 'ifa-framework';
 
 export default defineConfig({
   browser: {
@@ -314,13 +314,13 @@ export default defineConfig({
 });
 EOF
 
-cat > templates/basic/example.fau.ts << 'EOF'
-import { FauPage } from 'fau-framework';
+cat > templates/basic/example.ifa.ts << 'EOF'
+import { IFAPage } from 'ifa-framework';
 
-export default async function exampleTest(page: FauPage) {
+export default async function exampleTest(page: IFAPage) {
   await page.goto('https://example.com');
   
-  await page.screenshot({ path: 'fau-results/screenshots/example.png' });
+  await page.screenshot({ path: 'ifa-results/screenshots/example.png' });
   
   console.log('✅ Example test completed!');
 }
@@ -328,11 +328,11 @@ EOF
 
 # Documentation files
 cat > docs/api/README.md << 'EOF'
-# FAU Framework API Documentation
+# IFA Framework API Documentation
 
 ## Core Classes
 
-### FauEngine
+### IFAEngine
 Main framework engine for running tests.
 
 #### Methods
@@ -342,7 +342,7 @@ Main framework engine for running tests.
 - `runTestSuite(tests)`: Run multiple tests
 - `close()`: Clean up resources
 
-### FauPage
+### IFAPage
 Enhanced page wrapper with smart capabilities.
 
 #### Basic Methods
@@ -358,23 +358,23 @@ Enhanced page wrapper with smart capabilities.
 
 ## Configuration
 
-See `fau.config.ts` for all available options.
+See `ifa.config.ts` for all available options.
 EOF
 
 cat > docs/guides/getting-started.md << 'EOF'
-# Getting Started with FAU Framework
+# Getting Started with IFA Framework
 
 ## Installation
 
 ```bash
-npm install fau-framework
+npm install ifa-framework
 ```
 
 ## Quick Start
 
 1. Initialize project:
 ```bash
-npx fau init
+npx ifa init
 ```
 
 2. Run tests:
@@ -384,10 +384,10 @@ npm test
 
 ## Writing Tests
 
-Tests are TypeScript/JavaScript functions that receive a `FauPage` instance:
+Tests are TypeScript/JavaScript functions that receive a `IFAPage` instance:
 
 ```typescript
-export default async function myTest(page: FauPage) {
+export default async function myTest(page: IFAPage) {
   await page.goto('https://example.com');
   await page.smartClick('login button');
   await page.screenshot({ path: 'evidence.png' });
@@ -423,7 +423,7 @@ cat > .vscode/launch.json << 'EOF'
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug FAU CLI",
+      "name": "Debug IFA CLI",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/src/cli.ts",
@@ -448,7 +448,7 @@ cat > .vscode/launch.json << 'EOF'
 }
 EOF
 
-echo "✅ FAU Framework project structure created successfully!"
+echo "✅ IFA Framework project structure created successfully!"
 echo ""
 echo "📁 Project structure:"
 echo "├── src/                 # Source code"
@@ -458,7 +458,7 @@ echo "│   └── utils/           # Utility functions"
 echo "├── tests/               # Test files"
 echo "│   ├── unit/            # Unit tests"
 echo "│   ├── integration/     # Integration tests"
-echo "│   └── examples/        # Example FAU tests"
+echo "│   └── examples/        # Example IFA tests"
 echo "├── bin/                 # CLI executable"
 echo "├── templates/           # Project templates"
 echo "├── docs/                # Documentation"
@@ -470,4 +470,3 @@ echo "2. node scripts/dev-setup.js"
 echo "3. npm run build"
 echo "4. npm test"
 echo ""
-echo "🎯 Sprint 1-2 Status: Foundation Complete ✅"

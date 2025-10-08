@@ -1,6 +1,6 @@
-export { FauEngine } from "./FauEngine";
+export { IFAEngine } from "./IFAEngine";
 export { ConfigManager } from "./ConfigManager";
 export { Logger } from "./Logger";
-export { FauPageWrapper } from "./FauPageWrapper";
+export { IFAPageWrapper } from "./IFAPageWrapper";
 export { ReportingEngine } from "./ReportingEngine";
 export * from "./Types";

@@ -1,18 +1,18 @@
 import { Page } from "playwright";
-import { FauConfig, FauPage } from "./Types";
+import { IFAConfig, IFAPage } from "./Types";
 import { Logger } from "./Logger";
 import * as fsExtra from "fs-extra";
 import * as path from "path";
 
 const fs = (fsExtra as any).existsSync ? fsExtra : (fsExtra as any).default;
 
-export class FauPageWrapper implements FauPage {
+export class IFAPageWrapper implements IFAPage {
   private page: Page;
-  private config: FauConfig;
+  private config: IFAConfig;
   private logger: Logger;
   private stepCounter: number = 0;
 
-  constructor(page: Page, config: FauConfig, logger: Logger) {
+  constructor(page: Page, config: IFAConfig, logger: Logger) {
     this.page = page;
     this.config = config;
     this.logger = logger;

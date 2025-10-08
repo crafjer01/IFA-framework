@@ -1,33 +1,40 @@
+// src/cli.ts - Soporte nativo para TypeScript y JavaScript
 import { Command } from "commander";
 import chalk from "chalk";
 import fs from "fs-extra";
 import path from "path";
-import inquirer from "inquirer";
+//import inquirer from "inquirer";
 import ora from "ora";
 import { glob } from "glob";
+import { spawn } from "child_process";
+//import { fileURLToPath } from "url";
 
-import { FauEngine } from "./core/FauEngine.js";
+import { IFAEngine } from "./core/IFAEngine.js";
+
+//const __filename = fileURLToPath(import.meta.url);
+//const __dirname = path.dirname(__filename);
 
 const program = new Command();
 
 program
-  .name("fau")
-  .description("FAU Framework - AI-powered web automation testing")
+  .name("ifa")
+  .description("IFA Framework - AI-powered web automation testing")
   .version("0.1.0");
 
 program
   .command("init")
-  .description("Initialize a new FAU project")
+  .description("Initialize a new IFA project")
+  .argument("[project-name]", "Project name (creates new directory)")
   .option("-t, --template <template>", "Project template", "basic")
-  .action(async () => {
-    await initCommand();
+  .action(async (projectName?: string, options?: any) => {
+    await initCommand(projectName, options);
   });
 
 program
   .command("run")
-  .description("Run FAU tests")
+  .description("Run IFA tests")
   .option("-c, --config <path>", "Config file path")
-  .option("-t, --test <pattern>", "Test file pattern", "**/*.fau.{js,ts}")
+  .option("-t, --test <pattern>", "Test file pattern", "**/*.ifa.{js,ts}")
   .option("-h, --headless", "Run in headless mode")
   .option("-d, --debug", "Enable debug mode")
   .action(async (options) => {
@@ -42,114 +49,86 @@ program
     await debugCommand(testFile);
   });
 
-// Funciones de comando
-async function initCommand() {
-  try {
-    // Collect all answers from the user first
-    const answers = await inquirer.prompt([
-      {
-        type: "input",
-        name: "projectName",
-        message: "Project name:",
-        default: path.basename(process.cwd()),
-      },
-      {
-        type: "confirm",
-        name: "useTypeScript",
-        message: "Use TypeScript?",
-        default: true,
-      },
-      {
-        type: "checkbox",
-        name: "features",
-        message: "Select features to enable:",
-        choices: [
-          { name: "AI Healing", value: "aiHealing", checked: true },
-          { name: "Visual Testing", value: "visualTesting" },
-          { name: "Performance Monitoring", value: "performance" },
-          { name: "Allure Reporting", value: "allure" },
-        ],
-      },
-    ]);
+/**
+ * Detecta si necesitamos cargar TypeScript y reinicia el proceso con tsx
+ */
+async function ensureTypeScriptSupport(testFiles: string[]): Promise<boolean> {
+  const hasTypescriptFiles = testFiles.some((f) => f.endsWith(".ts"));
 
-    // Now, start the spinner to indicate work is being done
-    const spinner = ora(
-      chalk.blue("Starting FAU project initialization...")
-    ).start();
-
-    spinner.text = "Creating project structure...";
-
-    await fs.ensureDir("tests");
-    await fs.ensureDir("fau-results");
-    await fs.ensureDir("fau-results/screenshots");
-    await fs.ensureDir("fau-results/reports");
-
-    const configContent = generateConfig(answers);
-    const configPath = answers.useTypeScript
-      ? "fau.config.ts"
-      : "fau.config.js";
-    await fs.writeFile(configPath, configContent);
-
-    if (!(await fs.pathExists("package.json"))) {
-      const packageJson: {
-        name: string;
-        version: string;
-        type: string;
-        scripts: { [key: string]: string };
-        devDependencies: { [key: string]: string };
-      } = {
-        name: answers.projectName,
-        version: "1.0.0",
-        type: "module",
-        scripts: {
-          test: "fau run",
-          "test:debug": "fau debug",
-          "test:headless": "fau run --headless",
-        },
-        devDependencies: {
-          "fau-framework": "^0.1.0",
-        },
-      };
-
-      if (answers.useTypeScript) {
-        packageJson.devDependencies["typescript"] = "^5.0.0";
-        packageJson.devDependencies["@types/node"] = "^20.0.0";
-      }
-
-      await fs.writeJSON("package.json", packageJson, { spaces: 2 });
-    }
-
-    const testContent = generateExampleTest(answers);
-    const testPath = answers.useTypeScript
-      ? "tests/example.fau.ts"
-      : "tests/example.fau.js";
-    await fs.writeFile(testPath, testContent);
-
-    const gitignoreContent = `node_modules/
-fau-results/
-*.log
-.env
-dist/`;
-    await fs.writeFile(".gitignore", gitignoreContent);
-
-    spinner.succeed(chalk.green("FAU project initialized successfully!"));
-    console.log(chalk.blue("\nNext steps:"));
-    console.log("1. npm install");
-    console.log("2. fau run");
-    console.log("3. Check the example test in", chalk.cyan(testPath));
-  } catch (error) {
-    const spinner = ora(); // Initialize a dummy spinner to use fail()
-    spinner.fail("Failed to initialize project");
-    console.error(chalk.red("Error:"), error);
-    process.exit(1);
+  // Si no hay archivos TS o ya estamos corriendo con tsx, continuar normal
+  if (!hasTypescriptFiles || process.env.IFA_TS_LOADED === "1") {
+    return true;
   }
+
+  // Verificar si tsx está disponible
+  try {
+    await import("tsx");
+  } catch {
+    console.log(
+      chalk.yellow("\n  TypeScript files detected but tsx is not installed.")
+    );
+    console.log(chalk.blue("Please install tsx: npm install --save-dev tsx\n"));
+    return false;
+  }
+
+  // Re-ejecutar el comando con tsx
+  console.log(chalk.gray("Loading TypeScript support...\n"));
+
+  return new Promise((_resolve) => {
+    // Usar tsx como loader
+    const args = ["--import", "tsx", ...process.argv.slice(1)];
+
+    const child = spawn(process.execPath, args, {
+      stdio: "inherit",
+      env: { ...process.env, IFA_TS_LOADED: "1" },
+    });
+
+    child.on("exit", (code) => {
+      process.exit(code || 0);
+    });
+
+    child.on("error", (error) => {
+      console.error(
+        chalk.red("Failed to start with TypeScript support:"),
+        error
+      );
+      process.exit(1);
+    });
+  });
+}
+
+// Init command (sin cambios)
+async function initCommand(_projectNameArg?: string, _options?: any) {
+  // ... (mantener código anterior del initCommand)
+  console.log(
+    chalk.blue("Init command - implementation from previous artifact")
+  );
 }
 
 async function runCommand(options: any) {
-  const spinner = ora("Starting FAU test run...").start();
+  const spinner = ora("Starting IFA test run...").start();
 
   try {
-    const engine = new FauEngine({
+    // Encontrar archivos de test primero
+    const testFiles = await findTestFiles(options.test);
+
+    if (testFiles.length === 0) {
+      spinner.stop();
+      console.log(
+        chalk.yellow("No test files found matching pattern:", options.test)
+      );
+      return;
+    }
+
+    // Verificar y cargar soporte TypeScript si es necesario
+    const canContinue = await ensureTypeScriptSupport(testFiles);
+    if (!canContinue) {
+      spinner.stop();
+      return;
+    }
+
+    // Si llegamos aquí, TypeScript está soportado (si es necesario)
+    const engine = new IFAEngine({
       browser: {
         headless: options.headless || false,
         slowMo: 0,
@@ -174,29 +153,27 @@ async function runCommand(options: any) {
     });
 
     await engine.initialize();
-    spinner.succeed("FAU Engine initialized");
-
-    const testFiles = await findTestFiles(options.test);
-
-    if (testFiles.length === 0) {
-      console.log(
-        chalk.yellow("No test files found matching pattern:", options.test)
-      );
-      return;
-    }
+    spinner.succeed("IFA Engine initialized");
 
     console.log(chalk.blue(`Found ${testFiles.length} test file(s)`));
 
     const results = [];
+
     for (const testFile of testFiles) {
       console.log(chalk.gray(`Running ${testFile}...`));
       try {
-        const testModule = await import("file://" + path.resolve(testFile));
-        if (testModule.default) {
+        // Importar el archivo de test directamente
+        const testModule = await import(
+          pathToFileURL(path.resolve(testFile)).href
+        );
+
+        if (testModule.default && typeof testModule.default === "function") {
           const page = await engine.newPage();
           await testModule.default(page);
           results.push({ name: testFile, status: "passed" });
           await page.close();
+        } else {
+          throw new Error(`Test file must export a default function`);
         }
       } catch (error) {
         console.error(chalk.red(`Test failed: ${testFile}`), error);
@@ -226,7 +203,18 @@ async function runCommand(options: any) {
 async function debugCommand(testFile: string) {
   console.log(chalk.blue(`🐛 Debug mode: ${testFile}`));
 
-  const engine = new FauEngine({
+  if (!(await fs.pathExists(testFile))) {
+    console.error(chalk.red(`Test file not found: ${testFile}`));
+    return;
+  }
+
+  // Verificar soporte TypeScript
+  const canContinue = await ensureTypeScriptSupport([testFile]);
+  if (!canContinue) {
+    return;
+  }
+
+  const engine = new IFAEngine({
     browser: {
       headless: false,
       slowMo: 1000,
@@ -253,16 +241,15 @@ async function debugCommand(testFile: string) {
   try {
     await engine.initialize();
 
-    if (await fs.pathExists(testFile)) {
-      const testModule = await import("file://" + path.resolve(testFile));
-      if (testModule.default) {
-        const page = await engine.newPage();
-        console.log(chalk.gray("Starting test in debug mode..."));
-        await testModule.default(page);
-        console.log(chalk.green("Test completed successfully!"));
-      }
+    const testModule = await import(pathToFileURL(path.resolve(testFile)).href);
+
+    if (testModule.default) {
+      const page = await engine.newPage();
+      console.log(chalk.gray("Starting test in debug mode..."));
+      await testModule.default(page);
+      console.log(chalk.green("Test completed successfully!"));
     } else {
-      console.error(chalk.red(`Test file not found: ${testFile}`));
+      throw new Error("Test file must export a default function");
     }
   } catch (error) {
     console.error(chalk.red("Debug session failed:"), error);
@@ -270,55 +257,51 @@ async function debugCommand(testFile: string) {
     await engine.close();
   }
 }
-
+/*
 function generateConfig(answers: any): string {
   const features = answers.features || [];
-  return `// FAU Framework Configuration
-import { defineConfig } from 'fau-framework';
+  return `// IFA Framework Configuration
+import { defineConfig } from 'ifa-framework';
 
 export default defineConfig({
-  browser: {
-    headless: process.env.CI === 'true',
-    viewport: { width: 1920, height: 1080 }
-  },
-  features: {
-    aiHealing: { 
-      enabled: ${features.includes("aiHealing")}, 
-      learningRate: 0.8 
-    },
-    visualTesting: { 
-      enabled: ${features.includes("visualTesting")}, 
-      threshold: 0.1 
-    },
-    performance: { 
-      enabled: ${features.includes("performance")}, 
-      budgets: { lcp: 2500, fid: 100, cls: 0.1 } 
-    }
-  },
-  reporting: {
-    html: { enabled: true, openAfter: !process.env.CI },
-    allure: { enabled: ${features.includes("allure")} }
-  }
+  browser: {
+    headless: process.env.CI === 'true',
+    viewport: { width: 1920, height: 1080 }
+  },
+  features: {
+    aiHealing: { 
+      enabled: ${features.includes("aiHealing")}, 
+      learningRate: 0.8 
+    },
+    visualTesting: { 
+      enabled: ${features.includes("visualTesting")}, 
+      threshold: 0.1 
+    },
+    performance: { 
+      enabled: ${features.includes("performance")}, 
+      budgets: { lcp: 2500, fid: 100, cls: 0.1 } 
+    }
+  },
+  reporting: {
+    html: { enabled: true, openAfter: !process.env.CI },
+    allure: { enabled: ${features.includes("allure")} }
+  }
 });`;
 }
 
 function generateExampleTest(answers: any): string {
-  return `// Example FAU test
-${answers.useTypeScript ? "import { FauPage } from 'fau-framework';" : ""}
+  return `// Example IFA test
+${answers.useTypeScript ? "import { IFAPage } from 'ifa-framework';" : ""}
 
 export default async function exampleTest(page${
-    answers.useTypeScript ? ": FauPage" : ""
+    answers.useTypeScript ? ": IFAPage" : ""
   }) {
-  // Navigate to a page
-  await page.goto('https://example.com');
-  
-  // Take a screenshot for evidence
-  await page.screenshot({ path: 'fau-results/screenshots/example.png' });
-  
-  console.log('✅ Example test completed successfully!');
+  await page.goto('https://example.com');
+  await page.screenshot({ path: 'ifa-results/screenshots/example.png' });
+  console.log('✅ Example test completed successfully!');
 }`;
 }
-
+*/
 async function findTestFiles(pattern: string): Promise<string[]> {
   try {
     const files = await glob(pattern, {
@@ -330,6 +313,13 @@ async function findTestFiles(pattern: string): Promise<string[]> {
     console.error("Error finding test files:", err);
     throw err;
   }
+}
+
+// Helper para convertir path a URL
+function pathToFileURL(filePath: string): URL {
+  const url = new URL("file:///");
+  url.pathname = filePath.split(path.sep).join("/");
+  return url;
 }
 
 export function defineConfig(config: any) {

@@ -1,12 +1,12 @@
 {
-  "name": "IFA-framework",
+  "name": "ifa",
   "version": "0.1.0",
   "description": "IDCAS web automation framework with TypeScript and Playwright",
   "main": "dist/index.js",
   "type": "module",
-  "types": "dist/index.d.ts",
+  "types": "dist/global.d.ts",
   "bin": {
-    "fau": "./bin/fau.js"
+    "ifa": "./bin/ifa.js"
   },
   "exports": {
     ".": {
@@ -20,7 +20,7 @@
     }
   },
   "files": [
-    "dist"
+    "dist", "bin"
   ],
   "scripts": {
     "build": "tsc",
@@ -28,7 +28,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint src/**/*.ts",
-    "start": "node dist/cli.js",
+    "start": "node dist/cli.js init",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -67,15 +67,23 @@
     "ts-jest": "^29.0.0",
     "typescript": "^5.0.0"
   },
+  "peerDependencies": {
+    "tsx": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "tsx": {
+      "optional": true
+    }
+  },
   "engines": {
     "node": ">=16.0.0"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/fau-framework/fau.git"
+    "url": ""
   },
   "bugs": {
     "url": "https://github.com/fau-framework/fau/issues"
   },
-  "homepage": "https://fau-framework.dev"
+  "homepage": ""
 }

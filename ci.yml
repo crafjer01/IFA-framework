@@ -1,5 +1,5 @@
 # .github/workflows/ci.yml
-name: FAU Framework CI
+name: IFA Framework CI
 
 on:
   push:

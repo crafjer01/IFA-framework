@@ -1,4 +1,4 @@
-export interface FauConfig {
+export interface IFAConfig {
   browser: {
     headless: boolean;
     slowMo: number;
@@ -61,7 +61,7 @@ export interface LogEntry {
   error?: Error | undefined;
 }
 
-export interface FauPage {
+export interface IFAPage {
   // Playwright Page methods
   goto(url: string): Promise<void>;
   click(selector: string): Promise<void>;

@@ -156,51 +156,6 @@ export class SmartTextLocator {
     return null;
   }
 
-  /**
-   * Find element by aria-describedby attribute
-   */
-  private async findByDescribedBy(
-    searchText: string
-  ): Promise<LocatorResult | null> {
-    const normalizedSearch = this.normalizeText(searchText);
-
-    const elements = await this.page.$$("[aria-describedby]");
-
-    for (const element of elements) {
-      const describedById = await element.getAttribute("aria-describedby");
-      if (!describedById) continue;
-
-      const descIds = describedById.split(" ");
-      for (const descId of descIds) {
-        try {
-          const descElement = await this.page.$(`#${descId}`);
-          if (descElement) {
-            const descText = await this.getElementText(descElement);
-            const normalizedDesc = this.normalizeText(descText);
-
-            if (
-              normalizedDesc === normalizedSearch ||
-              normalizedDesc.includes(normalizedSearch) ||
-              normalizedSearch.includes(normalizedDesc)
-            ) {
-              return {
-                element,
-                confidence: 0.85,
-                strategy: "aria-describedby",
-                matchedText: descText,
-                selector: await this.getElementSelector(element),
-              };
-            }
-          }
-        } catch (error) {
-          console.debug(`Error processing describedby ID ${descId}:`, error);
-        }
-      }
-    }
-
-    return null;
-  }
-
   private async findByExactText(
     searchText: string
   ): Promise<LocatorResult | null> {

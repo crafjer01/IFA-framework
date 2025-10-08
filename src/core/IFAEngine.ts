@@ -1,18 +1,18 @@
 import { Browser, BrowserContext } from "@playwright/test";
-import { FauConfig, TestResult, FauPage } from "./Types.js";
+import { IFAConfig, TestResult, IFAPage } from "./Types.js";
 import { ConfigManager } from "./ConfigManager.js";
 import { Logger } from "./Logger.js";
 import { ReportingEngine } from "./ReportingEngine.js";
-import { FauPageWrapper } from "./FauPageWrapper.js";
+import { IFAPageWrapper } from "./IFAPageWrapper.js";
 
-export class FauEngine {
-  private config: FauConfig;
+export class IFAEngine {
+  private config: IFAConfig;
   private logger: Logger;
   private reportingEngine: ReportingEngine;
   private browser?: Browser;
   private context?: BrowserContext;
 
-  constructor(config?: Partial<FauConfig>) {
+  constructor(config?: Partial<IFAConfig>) {
     this.config = ConfigManager.loadConfig(config);
     this.logger = new Logger(this.config.logging);
     this.reportingEngine = new ReportingEngine(this.config.reporting);
@@ -43,13 +43,13 @@ export class FauEngine {
     }
   }
 
-  async newPage(): Promise<FauPage> {
+  async newPage(): Promise<IFAPage> {
     if (!this.context) {
       throw new Error("Engine not initialized. Call initialize() first.");
     }
 
     const page = await this.context.newPage();
-    const fauPage = new FauPageWrapper(page, this.config, this.logger);
+    const fauPage = new IFAPageWrapper(page, this.config, this.logger);
 
     // Setup automatic screenshot on failure
     page.on("pageerror", async (error) => {
@@ -60,7 +60,7 @@ export class FauEngine {
   }
 
   async runTest(
-    testFn: (page: FauPage) => Promise<void>,
+    testFn: (page: IFAPage) => Promise<void>,
     testName: string
   ): Promise<TestResult> {
     const startTime = Date.now();
@@ -102,7 +102,7 @@ export class FauEngine {
   }
 
   async runTestSuite(
-    tests: Array<{ name: string; fn: (page: FauPage) => Promise<void> }>
+    tests: Array<{ name: string; fn: (page: IFAPage) => Promise<void> }>
   ): Promise<TestResult[]> {
     const results: TestResult[] = [];
 
@@ -126,7 +126,7 @@ export class FauEngine {
   }
 
   private async captureFailureEvidence(
-    page: FauPage,
+    page: IFAPage,
     _error: Error
   ): Promise<void> {
     try {

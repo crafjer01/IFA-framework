@@ -1,7 +1,7 @@
 // src/core/ConfigManager.ts
 
 import * as fsExtra from "fs-extra";
-import { FauConfig } from "./Types.js";
+import { IFAConfig } from "./Types.js";
 
 // Determinar el objeto correcto: si fsExtra tiene existsSync, lo usamos; si no, usamos fsExtra.default
 const fs = (fsExtra as any).existsSync ? fsExtra : (fsExtra as any).default;
@@ -37,7 +37,7 @@ function deepMerge(target: any, source: any): any {
 }
 
 export class ConfigManager {
-  private static defaultConfig: FauConfig = {
+  private static defaultConfig: IFAConfig = {
     browser: {
       headless: false,
       slowMo: 0,
@@ -83,18 +83,18 @@ export class ConfigManager {
    * Loads configuration from default values, an optional 'fau.config.json' file,
    * and runtime overrides, applying deep merge.
    */
-  static loadConfig(overrides?: Partial<FauConfig>): FauConfig {
-    let finalConfig: FauConfig = { ...this.defaultConfig };
+  static loadConfig(overrides?: Partial<IFAConfig>): IFAConfig {
+    let finalConfig: IFAConfig = { ...this.defaultConfig };
 
     // 1. Check for JSON config file
     const jsonConfigPath = "fau.config.json";
     if (fs.existsSync(jsonConfigPath)) {
       try {
         const fileContent = fs.readFileSync(jsonConfigPath, "utf-8");
-        const fileConfig = JSON.parse(fileContent) as Partial<FauConfig>;
+        const fileConfig = JSON.parse(fileContent) as Partial<IFAConfig>;
 
         // CORRECCIÓN: Usar deep merge para fusionar la configuración del archivo
-        finalConfig = deepMerge(finalConfig, fileConfig) as FauConfig;
+        finalConfig = deepMerge(finalConfig, fileConfig) as IFAConfig;
 
         console.log("Config file fau.config.json found and loaded");
       } catch (error) {
@@ -121,7 +121,7 @@ export class ConfigManager {
     // 3. Apply overrides
     if (overrides) {
       // CORRECCIÓN: Usar deep merge para fusionar los overrides
-      finalConfig = deepMerge(finalConfig, overrides) as FauConfig;
+      finalConfig = deepMerge(finalConfig, overrides) as IFAConfig;
     }
 
     this.validateConfig(finalConfig);
@@ -175,7 +175,7 @@ export default defineConfig({
 });`;
   }
 
-  static validateConfig(config: FauConfig): void {
+  static validateConfig(config: IFAConfig): void {
     // Basic validation
     if (!config.browser || typeof config.browser.headless !== "boolean") {
       throw new Error("Invalid browser configuration");

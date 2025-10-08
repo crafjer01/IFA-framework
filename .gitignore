@@ -1,5 +1,5 @@
 node_modules/
-fau-results/
+ifa-results/
 *.log
 .env
 dist/
