@@ -3,3 +3,4 @@ ifa-results/
 *.log
 .env
 dist/
+bin/
