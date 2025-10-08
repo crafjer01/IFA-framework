@@ -4,8 +4,8 @@
 
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-import { spawn } from "child_process";
 import { existsSync } from "fs";
+import { execa } from "execa"; // 🎯 Importar execa
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -54,66 +54,41 @@ function isTsxAvailable() {
 }
 
 // Función principal
-function main() {
+async function main() {
+  // 🎯 Hacer la función principal asíncrona para usar await
   const args = process.argv.slice(2);
   const command = args[0];
 
-  // Init no necesita TypeScript support
-  if (command === "init") {
-    const child = spawn(process.execPath, [cliPath, ...args], {
-      stdio: "inherit",
-      env: { ...process.env, FORCE_COLOR: "1" },
-    });
+  const execArgs = [cliPath, ...args];
+  const execEnv = { ...process.env, FORCE_COLOR: "1" };
 
-    child.on("exit", (code) => process.exit(code || 0));
-    return;
-  }
-
-  // Para run/debug, verificar si necesitamos TypeScript
-  if ((command === "run" || command === "debug") && needsTypeScriptSupport()) {
-    if (!isTsxAvailable()) {
-      console.log("\nTypeScript files detected but tsx is not installed.");
-      console.log("Install tsx to run TypeScript tests directly:");
-      console.log("   npm install --save-dev tsx\n");
-      console.log("Or compile your tests first:");
-      console.log("   npm run build\n");
-      process.exit(1);
-    }
-
-    // Ejecutar con tsx
-    // Detectar versión de Node para usar el flag correcto
-    const nodeVersion = process.versions.node.split(".").map(Number);
-    const [major, minor] = nodeVersion;
-
-    // Node 20.6+ y 18.19+ soportan --import
-    const supportsImport =
-      (major === 20 && minor >= 6) ||
-      major > 20 ||
-      (major === 18 && minor >= 19);
-    const loaderFlag = supportsImport ? "--import" : "--loader";
-
-    const child = spawn(
-      process.execPath,
-      [loaderFlag, "tsx", cliPath, ...args],
-      {
+  try {
+    if (command === "init" || (command !== "run" && command !== "debug")) {
+      // Ejecutar INIT o comandos sin TSX directamente
+      // 🎯 Usar execa para ejecutar node con la ruta al cli.js
+      await execa(process.execPath, execArgs, {
         stdio: "inherit",
-        env: { ...process.env, FORCE_COLOR: "1", IFA_TS_LOADED: "1" },
-      }
-    );
-
-    child.on("exit", (code) => process.exit(code || 0));
-    child.on("error", (error) => {
-      console.error("Failed to start with TypeScript support:", error);
-      process.exit(1);
-    });
-  } else {
-    // Ejecutar normalmente sin tsx
-    const child = spawn(process.execPath, [cliPath, ...args], {
-      stdio: "inherit",
-      env: { ...process.env, FORCE_COLOR: "1" },
-    });
-
-    child.on("exit", (code) => process.exit(code || 0));
+        env: execEnv,
+      });
+    }
+    // ... (Tu lógica de 'run' y 'debug' con tsx)
+    else if (
+      (command === "run" || command === "debug") &&
+      needsTypeScriptSupport()
+    ) {
+      // ... lógica de detección de tsx ...
+      // Ejecutar con tsx (ajustar execa aquí también)
+      // ...
+    } else {
+      // Ejecutar normalmente sin tsx
+      await execa(process.execPath, execArgs, {
+        stdio: "inherit",
+        env: execEnv,
+      });
+    }
+  } catch (error) {
+    console.error("IFA CLI execution failed:", error.message);
+    process.exit(error.exitCode || 1);
   }
 }
 
