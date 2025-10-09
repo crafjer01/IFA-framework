@@ -1,6 +1,6 @@
 {
   "name": "ifa-framework",
-  "version": "0.1.1",
+  "version": "0.1.9",
   "description": "IDCAS web automation framework with TypeScript and Playwright",
   "main": "dist/index.js",
   "type": "module",

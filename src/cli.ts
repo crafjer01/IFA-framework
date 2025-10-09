@@ -7,6 +7,8 @@ import inquirer from "inquirer";
 import ora from "ora";
 import { glob } from "glob";
 import { IFAEngine } from "./core/IFAEngine.js";
+import { pathToFileURL } from "url";
+import { spawn } from "child_process";
 
 const program = new Command();
 
@@ -235,10 +237,76 @@ async function initCommand(projectNameArg?: string, _options?: any) {
   }
 }
 
+/**
+ * Detecta si necesitamos cargar TypeScript y reinicia el proceso con tsx
+ */
+async function ensureTypeScriptSupport(testFiles: string[]): Promise<boolean> {
+  const hasTypescriptFiles = testFiles.some((f) => f.endsWith(".ts"));
+
+  // Si no hay archivos TS o ya estamos corriendo con tsx, continuar normal
+  if (!hasTypescriptFiles || process.env.IFA_TS_LOADED === "1") {
+    return true;
+  }
+
+  // Verificar si tsx está disponible
+  try {
+    await import("tsx");
+  } catch {
+    console.log(
+      chalk.yellow("\nTypeScript files detected but tsx is not installed.")
+    );
+    console.log(chalk.blue("Please install tsx: npm install --save-dev tsx\n"));
+    return false;
+  }
+
+  // Re-ejecutar el comando con tsx
+  console.log(chalk.gray("Loading TypeScript support...\n"));
+
+  return new Promise((_resolve) => {
+    // Usar tsx como loader
+    const args = ["--import", "tsx", ...process.argv.slice(1)];
+
+    const child = spawn(process.execPath, args, {
+      stdio: "inherit",
+      env: { ...process.env, IFA_TS_LOADED: "1" },
+    });
+
+    child.on("exit", (code) => {
+      process.exit(code || 0);
+    });
+
+    child.on("error", (error) => {
+      console.error(
+        chalk.red("Failed to start with TypeScript support:"),
+        error
+      );
+      process.exit(1);
+    });
+  });
+}
+
 async function runCommand(options: any) {
   const spinner = ora("Starting IFA test run...").start();
 
   try {
+    // Encontrar archivos de test primero
+    const testFiles = await findTestFiles(options.test);
+
+    if (testFiles.length === 0) {
+      spinner.stop();
+      console.log(
+        chalk.yellow("No test files found matching pattern:", options.test)
+      );
+      return;
+    }
+
+    // Verificar y cargar soporte TypeScript si es necesario
+    const canContinue = await ensureTypeScriptSupport(testFiles);
+    if (!canContinue) {
+      spinner.stop();
+      return;
+    }
+
     const engine = new IFAEngine({
       browser: {
         headless: options.headless || false,
@@ -266,27 +334,25 @@ async function runCommand(options: any) {
     await engine.initialize();
     spinner.succeed("IFA Engine initialized");
 
-    const testFiles = await findTestFiles(options.test);
-
-    if (testFiles.length === 0) {
-      console.log(
-        chalk.yellow("No test files found matching pattern:", options.test)
-      );
-      return;
-    }
-
     console.log(chalk.blue(`Found ${testFiles.length} test file(s)`));
 
     const results = [];
+
     for (const testFile of testFiles) {
       console.log(chalk.gray(`Running ${testFile}...`));
       try {
-        const testModule = await import("file://" + path.resolve(testFile));
-        if (testModule.default) {
+        // Importar el archivo de test directamente
+        const testModule = await import(
+          pathToFileURL(path.resolve(testFile)).href
+        );
+
+        if (testModule.default && typeof testModule.default === "function") {
           const page = await engine.newPage();
           await testModule.default(page);
           results.push({ name: testFile, status: "passed" });
           await page.close();
+        } else {
+          throw new Error(`Test file must export a default function`);
         }
       } catch (error) {
         console.error(chalk.red(`Test failed: ${testFile}`), error);
@@ -383,6 +449,7 @@ function generatePackageJson(projectName: string, answers: any) {
     dependencies: {
       "ifa-framework": "^0.1.0",
       playwright: "^1.40.0",
+      tsx: "^4.20.6",
     },
     devDependencies: {},
   };
@@ -410,8 +477,8 @@ function generateTsConfig() {
   return {
     compilerOptions: {
       target: "ES2020",
-      module: "ESNext",
-      moduleResolution: "node",
+      module: "NodeNext",
+      moduleResolution: "NodeNext",
       lib: ["ES2020"],
       outDir: "./dist",
       rootDir: "./src",
