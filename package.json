@@ -28,7 +28,7 @@
     "copy:bin": "mkdir bin && cp src/bin/ifa.js bin/ifa.js",
     "compile": "tsc",
     "dev": "tsc --watch",
-    "test": "playwright test tests/core/CognitoEngine.test.ts",
+    "test": "playwright test",
     "lint": "eslint src/**/*.ts",
     "start": "node dist/cli.js init",
     "build": "npm run clean && npm run compile && npm run copy:bin",

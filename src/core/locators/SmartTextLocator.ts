@@ -382,7 +382,7 @@ export class SmartTextLocator {
     // Strategy 1: Exact match
     try {
       console.log(
-        `🔍 Trying exact match for role="${role}" name="${cleanDescription}"`
+        `Trying exact match for role="${role}" name="${cleanDescription}"`
       );
       locator = this.page
         .getByRole(role as any, {
@@ -394,14 +394,14 @@ export class SmartTextLocator {
       elementHandle = await locator.elementHandle({ timeout: 1000 });
 
       if (elementHandle) {
-        console.log(`✅ Exact match found!`);
+        console.log(`Exact match found!`);
         confidence = 1.0;
         strategy = "aria-role-native-exact";
       } else {
-        console.log(`❌ No element handle from exact match`);
+        console.log(`No element handle from exact match`);
       }
     } catch (e) {
-      console.log(`❌ Exact match failed:`, e);
+      console.log(`Exact match failed:`);
       // Continue to partial match
     }
 
