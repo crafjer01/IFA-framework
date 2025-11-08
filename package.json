@@ -6,7 +6,7 @@
   "type": "module",
   "types": "dist/global.d.ts",
   "bin": {
-    "ifa": "./bin/ifa.js"
+    "Cognito": "./bin/cognito.js"
   },
   "exports": {
     ".": {
