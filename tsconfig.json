@@ -32,7 +32,7 @@
   },
   "include": [
     "src/**/*",
-    "tests/core/FauEngine.test.ts"
+    "tests/core/CognitoEngine.test.ts"
   ],
   "exclude": [
     "node_modules",

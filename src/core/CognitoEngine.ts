@@ -5,7 +5,7 @@ import { Logger } from "./Logger.js";
 import { ReportingEngine } from "./ReportingEngine.js";
 import { IFAPageWrapper } from "./IFAPageWrapper.js";
 
-export class IFAEngine {
+export class CognitoEngine {
   private config: IFAConfig;
   private logger: Logger;
   private reportingEngine: ReportingEngine;
@@ -16,8 +16,6 @@ export class IFAEngine {
     this.config = ConfigManager.loadConfig(config);
     this.logger = new Logger(this.config.logging);
     this.reportingEngine = new ReportingEngine(this.config.reporting);
-
-    this.logger.info("FAU Engine initialized");
   }
 
   async initialize(): Promise<void> {
@@ -35,8 +33,6 @@ export class IFAEngine {
         userAgent: this.config.browser.userAgent,
         ignoreHTTPSErrors: this.config.browser.ignoreHTTPSErrors,
       });
-
-      this.logger.info("Browser and context initialized");
     } catch (error) {
       this.logger.error("Failed to initialize browser", error as Error);
       throw error;
@@ -67,8 +63,6 @@ export class IFAEngine {
     let result: TestResult;
 
     try {
-      this.logger.info(`Starting test: ${testName}`);
-
       const page = await this.newPage();
       await testFn(page);
 
@@ -80,8 +74,6 @@ export class IFAEngine {
         screenshots: [],
         logs: this.logger.getLogs(),
       };
-
-      this.logger.info(`Test passed: ${testName} (${result.duration}ms)`);
     } catch (error) {
       result = {
         name: testName,
@@ -151,7 +143,6 @@ export class IFAEngine {
       if (this.browser) {
         await this.browser.close();
       }
-      this.logger.info("FAU Engine closed");
     } catch (error) {
       this.logger.error("Error closing FAU Engine", error as Error);
     }

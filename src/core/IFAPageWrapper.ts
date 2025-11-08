@@ -88,8 +88,6 @@ export class IFAPageWrapper implements IFAPage {
   }
 
   async click(selector: string): Promise<void> {
-    this.logger.info(`Clicking element: ${selector}`);
-
     try {
       await this.page.waitForSelector(selector, {
         timeout: this.config.timeouts.element,
@@ -97,8 +95,6 @@ export class IFAPageWrapper implements IFAPage {
 
       await this.page.click(selector);
       await this.takeStepScreenshot("click");
-
-      this.logger.info(`Successfully clicked: ${selector}`);
     } catch (error) {
       this.logger.error(`Failed to click: ${selector}`, error as Error);
       await this.takeStepScreenshot("click-failed");
@@ -133,7 +129,6 @@ export class IFAPageWrapper implements IFAPage {
 
     if (options?.path) {
       await fs.ensureDir(path.dirname(options.path));
-      this.logger.info(`Screenshot saved: ${options.path}`);
     }
 
     return buffer;
@@ -151,14 +146,8 @@ export class IFAPageWrapper implements IFAPage {
       waitUntil?: "load" | "domcontentloaded" | "networkidle";
     }
   ): Promise<void> {
-    this.logger.info(
-      `Setting page content with ${html.length} characters of HTML.`
-    );
-
     // Delegar la llamada al objeto Page nativo de Playwright
     await this.page.setContent(html, options);
-
-    this.logger.info("Page content set successfully.");
   }
 
   // Enhanced methods (basic implementation for Sprint 1, will be improved in Sprint 3-4)

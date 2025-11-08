@@ -1,11 +1,11 @@
 import { test, expect } from "@playwright/test";
-import { FauEngine } from "../../src/core/FauEngine";
+import { CognitoEngine } from "../../src/core/CognitoEngine";
 
-test.describe("FauEngine", () => {
-  let engine: FauEngine;
+test.describe("CognitoEngine test cases", () => {
+  let engine: CognitoEngine;
 
   test.beforeEach(() => {
-    engine = new FauEngine();
+    engine = new CognitoEngine();
   });
 
   test.afterEach(async () => {
@@ -35,7 +35,7 @@ test.describe("FauEngine", () => {
 
       await page.click("#btn");
 
-      await page.screenshot({ path: "test-screenshot.png" });
+      await page.screenshot({ path: "../../test-results/test-screenshot.png" });
     }, "Basic navigation test");
 
     expect(result.status).toBe("passed");

@@ -1,4 +1,4 @@
-export { IFAEngine } from "./core/IFAEngine.js";
+export { CognitoEngine } from "./core/CognitoEngine.js";
 export { ConfigManager } from "./core/ConfigManager.js";
 export { Logger } from "./core/Logger.js";
 export { IFAPageWrapper } from "./core/IFAPageWrapper.js";
@@ -7,8 +7,8 @@ export { defineConfig } from "./cli.js";
 export * from "./core/Types.js";
 
 export async function createFauEngine(config: any) {
-  const { IFAEngine } = await import("./core/IFAEngine.js");
-  const engine = new IFAEngine(config);
+  const { CognitoEngine } = await import("./core/CognitoEngine.js");
+  const engine = new CognitoEngine(config);
   await engine.initialize();
   return engine;
 }

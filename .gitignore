@@ -4,3 +4,6 @@ ifa-results/
 .env
 dist/
 bin/
+*.png
+test-results
+fau-results/
