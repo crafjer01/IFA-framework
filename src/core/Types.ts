@@ -1,4 +1,4 @@
-export interface IFAConfig {
+export interface CognitoConfig {
   browser: {
     headless: boolean;
     slowMo: number;
@@ -61,7 +61,7 @@ export interface LogEntry {
   error?: Error | undefined;
 }
 
-export interface IFAPage {
+export interface CognitoPage {
   // Playwright Page methods
   goto(url: string): Promise<void>;
   click(selector: string): Promise<void>;

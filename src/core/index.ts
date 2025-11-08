@@ -1,6 +1,6 @@
-export { IFAEngine } from "./IFAEngine";
+export { CognitoEngine } from "./CognitoEngine";
 export { ConfigManager } from "./ConfigManager";
 export { Logger } from "./Logger";
-export { IFAPageWrapper } from "./IFAPageWrapper";
+export { CognitoPageWrapper } from "./CognitoPageWrapper";
 export { ReportingEngine } from "./ReportingEngine";
 export * from "./Types";

@@ -3,7 +3,7 @@ import { IFAConfig, TestResult, IFAPage } from "./Types.js";
 import { ConfigManager } from "./ConfigManager.js";
 import { Logger } from "./Logger.js";
 import { ReportingEngine } from "./ReportingEngine.js";
-import { IFAPageWrapper } from "./IFAPageWrapper.js";
+import { IFAPageWrapper } from "./CognitoPageWrapper.js";
 
 export class CognitoEngine {
   private config: IFAConfig;

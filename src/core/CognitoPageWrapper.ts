@@ -1,18 +1,18 @@
 import { Page } from "playwright";
-import { IFAConfig, IFAPage } from "./Types";
+import { CognitoConfig, CognitoPage } from "./Types";
 import { Logger } from "./Logger";
 import * as fsExtra from "fs-extra";
 import * as path from "path";
 
 const fs = (fsExtra as any).existsSync ? fsExtra : (fsExtra as any).default;
 
-export class IFAPageWrapper implements IFAPage {
+export class CognitoPageWrapper implements CognitoPage {
   private page: Page;
-  private config: IFAConfig;
+  private config: CognitoConfig;
   private logger: Logger;
   private stepCounter: number = 0;
 
-  constructor(page: Page, config: IFAConfig, logger: Logger) {
+  constructor(page: Page, config: CognitoConfig, logger: Logger) {
     this.page = page;
     this.config = config;
     this.logger = logger;
@@ -57,7 +57,7 @@ export class IFAPageWrapper implements IFAPage {
       this.stepCounter++;
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
       const filename = `step-${this.stepCounter}-${action}-${timestamp}.png`;
-      const filepath = path.join("fau-results", "screenshots", filename);
+      const filepath = path.join("cognito-results", "screenshots", filename);
 
       await fs.ensureDir(path.dirname(filepath));
       await this.page.screenshot({ path: filepath, fullPage: false });
