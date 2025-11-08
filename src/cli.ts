@@ -6,20 +6,20 @@ import path from "path";
 import inquirer from "inquirer";
 import ora from "ora";
 import { glob } from "glob";
-import { IFAEngine } from "./core/IFAEngine.js";
+import { CognitoEngine } from "./core/CognitoEngine.js";
 import { pathToFileURL } from "url";
 import { spawn } from "child_process";
 
 const program = new Command();
 
 program
-  .name("ifa")
-  .description("IFA Framework - AI-powered web automation testing")
+  .name("cognito")
+  .description("Cognito Framework - AI-powered web automation testing")
   .version("0.1.0");
 
 program
   .command("init")
-  .description("Initialize a new IFA project")
+  .description("Initialize a new Cognito project")
   .argument("[project-name]", "Project name (creates new directory)")
   .option("-t, --template <template>", "Project template", "basic")
   .action(async (projectName?: string, options?: any) => {
@@ -28,9 +28,9 @@ program
 
 program
   .command("run")
-  .description("Run IFA tests")
+  .description("Run Cognito tests")
   .option("-c, --config <path>", "Config file path")
-  .option("-t, --test <pattern>", "Test file pattern", "**/*.ifa.{js,ts}")
+  .option("-t, --test <pattern>", "Test file pattern", "**/*.cognito.{js,ts}")
   .option("-h, --headless", "Run in headless mode")
   .option("-d, --debug", "Enable debug mode")
   .action(async (options) => {
@@ -56,7 +56,7 @@ async function initCommand(projectNameArg?: string, _options?: any) {
         type: "input",
         name: "projectName",
         message: "Project name:",
-        default: projectNameArg || "my-ifa-project",
+        default: projectNameArg || "my-cognito-project",
         when: !projectNameArg,
       },
       {
@@ -114,7 +114,7 @@ async function initCommand(projectNameArg?: string, _options?: any) {
       await fs.remove(projectPath);
     }
 
-    spinner.start(chalk.blue("Creating IFA project structure..."));
+    spinner.start(chalk.blue("Creating Cognito project structure..."));
 
     // Create project directory
     await fs.ensureDir(projectPath);
@@ -124,9 +124,9 @@ async function initCommand(projectNameArg?: string, _options?: any) {
       "src/tests",
       "src/pages",
       "src/utils",
-      "ifa-results/screenshots",
-      "ifa-results/reports",
-      "ifa-results/videos",
+      "cognito-results/screenshots",
+      "cognito-results/reports",
+      "cognito-results/videos",
       ".github/workflows",
       ".vscode",
     ];
@@ -159,11 +159,11 @@ async function initCommand(projectNameArg?: string, _options?: any) {
       );
     }
 
-    // 3. IFA config
+    // 3. Cognito config
     const configContent = generateConfig(answers);
     const configPath = path.join(
       projectPath,
-      answers.useTypeScript ? "ifa.config.ts" : "ifa.config.js"
+      answers.useTypeScript ? "cognito.config.ts" : "cognito.config.js"
     );
     await fs.writeFile(configPath, configContent);
 
@@ -194,10 +194,10 @@ async function initCommand(projectNameArg?: string, _options?: any) {
       generateEnvExample()
     );
 
-    spinner.succeed(chalk.green("IFA project structure created!"));
+    spinner.succeed(chalk.green("Cognito project structure created!"));
 
     // Show next steps
-    console.log(chalk.blue("\n📦 Next steps:\n"));
+    console.log(chalk.blue("\nNext steps:\n"));
 
     if (answers.createDirectory) {
       console.log(chalk.cyan(`  cd ${projectName}`));
@@ -214,7 +214,7 @@ async function initCommand(projectNameArg?: string, _options?: any) {
     console.log(chalk.cyan(`  npx playwright install`));
     console.log(chalk.cyan(`  ${answers.packageManager} test`));
 
-    console.log(chalk.blue("\n📚 Project structure:"));
+    console.log(chalk.blue("\nProject structure:"));
     console.log(
       chalk.gray(`
   ${projectName}/
@@ -222,14 +222,14 @@ async function initCommand(projectNameArg?: string, _options?: any) {
   │   ├── tests/           # Your test files
   │   ├── pages/           # Page Object Models
   │   └── utils/           # Utility functions
-  ├── ifa-results/         # Test results and reports
-  ├── ifa.config.ts        # IFA configuration
+  ├── cognito-results/         # Test results and reports
+  ├── cognito.config.ts        # Cognito configuration
   ├── package.json
   └── README.md
     `)
     );
 
-    console.log(chalk.green("\n✅ Project initialized successfully!\n"));
+    console.log(chalk.green("\nProject initialized successfully!\n"));
   } catch (error) {
     spinner.fail("Failed to initialize project");
     console.error(chalk.red("Error:"), error);
@@ -244,7 +244,7 @@ async function ensureTypeScriptSupport(testFiles: string[]): Promise<boolean> {
   const hasTypescriptFiles = testFiles.some((f) => f.endsWith(".ts"));
 
   // Si no hay archivos TS o ya estamos corriendo con tsx, continuar normal
-  if (!hasTypescriptFiles || process.env.IFA_TS_LOADED === "1") {
+  if (!hasTypescriptFiles || process.env.COGNITO_TS_LOADED === "1") {
     return true;
   }
 
@@ -268,7 +268,7 @@ async function ensureTypeScriptSupport(testFiles: string[]): Promise<boolean> {
 
     const child = spawn(process.execPath, args, {
       stdio: "inherit",
-      env: { ...process.env, IFA_TS_LOADED: "1" },
+      env: { ...process.env, COGNITO_TS_LOADED: "1" },
     });
 
     child.on("exit", (code) => {
@@ -286,7 +286,7 @@ async function ensureTypeScriptSupport(testFiles: string[]): Promise<boolean> {
 }
 
 async function runCommand(options: any) {
-  const spinner = ora("Starting IFA test run...").start();
+  const spinner = ora("Starting Cognito test run...").start();
 
   try {
     // Encontrar archivos de test primero
@@ -307,7 +307,7 @@ async function runCommand(options: any) {
       return;
     }
 
-    const engine = new IFAEngine({
+    const engine = new CognitoEngine({
       browser: {
         headless: options.headless || false,
         slowMo: 0,
@@ -332,7 +332,7 @@ async function runCommand(options: any) {
     });
 
     await engine.initialize();
-    spinner.succeed("IFA Engine initialized");
+    spinner.succeed("Cognito Engine initialized");
 
     console.log(chalk.blue(`Found ${testFiles.length} test file(s)`));
 
@@ -366,7 +366,7 @@ async function runCommand(options: any) {
     const failed = results.filter((r) => r.status === "failed").length;
 
     console.log(
-      chalk.green(`\n✅ Tests completed: ${passed} passed, ${failed} failed`)
+      chalk.green(`\nTests completed: ${passed} passed, ${failed} failed`)
     );
 
     if (failed > 0) {
@@ -380,9 +380,9 @@ async function runCommand(options: any) {
 }
 
 async function debugCommand(testFile: string) {
-  console.log(chalk.blue(`🐛 Debug mode: ${testFile}`));
+  console.log(chalk.blue(`Debug mode: ${testFile}`));
 
-  const engine = new IFAEngine({
+  const engine = new CognitoEngine({
     browser: {
       headless: false,
       slowMo: 1000,
@@ -435,19 +435,19 @@ function generatePackageJson(projectName: string, answers: any) {
   const pkg: any = {
     name: projectName,
     version: "1.0.0",
-    description: "IFA Framework test automation project",
+    description: "Cognito Framework test automation project",
     type: "module",
     scripts: {
-      test: "ifa run",
-      "test:headless": "ifa run --headless",
-      "test:debug": "ifa debug",
-      "test:ci": "ifa run --headless",
+      test: "cognito run",
+      "test:headless": "cognito run --headless",
+      "test:debug": "cognito debug",
+      "test:ci": "cognito run --headless",
     },
-    keywords: ["testing", "automation", "ifa", "playwright"],
+    keywords: ["testing", "automation", "Cognito", "playwright"],
     author: "",
     license: "MIT",
     dependencies: {
-      "ifa-framework": "^0.1.0",
+      "cognito-framework": "^0.1.0",
       playwright: "^1.40.0",
       tsx: "^4.20.6",
     },
@@ -466,8 +466,8 @@ function generatePackageJson(projectName: string, answers: any) {
   if (answers.features.includes("allure")) {
     pkg.devDependencies["allure-commandline"] = "^2.24.0";
     pkg.scripts["allure:generate"] =
-      "allure generate ifa-results/allure-results --clean";
-    pkg.scripts["allure:open"] = "allure open ifa-results/allure-report";
+      "allure generate cognito-results/allure-results --clean";
+    pkg.scripts["allure:open"] = "allure open cognito-results/allure-report";
   }
 
   return pkg;
@@ -490,7 +490,7 @@ function generateTsConfig() {
       types: ["node"],
     },
     include: ["src/**/*"],
-    exclude: ["node_modules", "dist", "ifa-results"],
+    exclude: ["node_modules", "dist", "cognito-results"],
   };
 }
 
@@ -503,14 +503,14 @@ function generateJsConfig() {
       checkJs: true,
     },
     include: ["src/**/*"],
-    exclude: ["node_modules", "ifa-results"],
+    exclude: ["node_modules", "cognito-results"],
   };
 }
 
 function generateConfig(answers: any): string {
   const features = answers.features || [];
-  return `// IFA Framework Configuration
-import { defineConfig } from 'ifa-framework';
+  return `// Cognito Framework Configuration
+import { defineConfig } from 'cognito-framework';
 
 export default defineConfig({
   // Browser configuration
@@ -576,7 +576,7 @@ dist/
 *.tsbuildinfo
 
 # Test results
-ifa-results/
+cognito-results/
 test-results/
 playwright-report/
 
@@ -602,7 +602,7 @@ npm-debug.log*
 function generateReadme(projectName: string, answers: any): string {
   return `# ${projectName}
 
-IFA Framework test automation project
+Cognito Framework test automation project
 
 ## 🚀 Getting Started
 
@@ -627,33 +627,41 @@ npm test
 npm run test:headless
 
 # Debug a specific test
-npm run test:debug src/tests/example.ifa.${answers.useTypeScript ? "ts" : "js"}
+npm run test:debug src/tests/example.cognito.${
+    answers.useTypeScript ? "ts" : "js"
+  }
 \`\`\`
 
-## 📁 Project Structure
+## Project Structure
 
 \`\`\`
 ${projectName}/
 ├── src/
-│   ├── tests/           # Test files (*.ifa.ts)
+│   ├── tests/           # Test files (*.cognito.ts)
 │   ├── pages/           # Page Object Models
 │   └── utils/           # Utility functions
-├── ifa-results/         # Test results, screenshots, reports
-├── ifa.config.${answers.useTypeScript ? "ts" : "js"}        # IFA configuration
+├── cognito-results/         # Test results, screenshots, reports
+├── cognito.config.${
+    answers.useTypeScript ? "ts" : "js"
+  }        # Cognito configuration
 └── package.json
 \`\`\`
 
 ## 📝 Writing Tests
 
-Create test files in \`src/tests/\` with \`.ifa.${
+Create test files in \`src/tests/\` with \`.cognito.${
     answers.useTypeScript ? "ts" : "js"
   }\` extension:
 
 \`\`\`${answers.useTypeScript ? "typescript" : "javascript"}
-${answers.useTypeScript ? "import { IFAPage } from 'ifa-framework';" : ""}
+${
+  answers.useTypeScript
+    ? "import { CognitoPage } from 'cognito-framework';"
+    : ""
+}
 
 export default async function myTest(page${
-    answers.useTypeScript ? ": IFAPage" : ""
+    answers.useTypeScript ? ": CognitoPage" : ""
   }) {
   await page.goto('https://example.com');
   
@@ -662,7 +670,7 @@ export default async function myTest(page${
   await page.smartFill('username', 'testuser');
   
   // Take screenshot for evidence
-  await page.screenshot({ path: 'ifa-results/screenshots/test.png' });
+  await page.screenshot({ path: 'cognito-results/screenshots/test.png' });
 }
 \`\`\`
 
@@ -672,7 +680,7 @@ ${answers.features.map((f: string) => `- ${f}`).join("\n")}
 
 ## 📊 Reports
 
-Test reports are generated in \`ifa-results/reports/\`
+Test reports are generated in \`cognito-results/reports/\`
 
 ${
   answers.features.includes("allure")
@@ -689,32 +697,34 @@ npm run allure:open
 
 ## 🔧 Configuration
 
-Edit \`ifa.config.${answers.useTypeScript ? "ts" : "js"}\` to customize:
+Edit \`cognito.config.${answers.useTypeScript ? "ts" : "js"}\` to customize:
 - Browser settings
 - Timeouts
 - Feature toggles
 - Reporting options
 
-## 📚 Documentation
+## Documentation
 
-- [IFA Framework Docs](https://ifa-framework.dev)
+- [Cognito Framework Docs](https://cognito-framework.dev)
 - [Playwright API](https://playwright.dev)
 
 ## 🤝 Contributing
 
 1. Write tests in \`src/tests/\`
-2. Follow naming convention: \`*.ifa.${answers.useTypeScript ? "ts" : "js"}\`
+2. Follow naming convention: \`*.cognito.${
+    answers.useTypeScript ? "ts" : "js"
+  }\`
 3. Use Page Objects in \`src/pages/\` for reusability
 4. Run tests before committing
 
-## 📄 License
+## License
 
 MIT
 `;
 }
 
 function generateEnvExample(): string {
-  return `# Environment variables for IFA tests
+  return `# Environment variables for Cognito tests
 # Copy this file to .env and fill in your values
 
 # Base URL for testing
@@ -737,31 +747,31 @@ DEBUG=false
 
 async function createExampleTests(projectPath: string, answers: any) {
   const ext = answers.useTypeScript ? "ts" : "js";
-  const importType = answers.useTypeScript ? ": IFAPage" : "";
+  const importType = answers.useTypeScript ? ": CognitoPage" : "";
   const importStatement = answers.useTypeScript
-    ? "import { IFAPage } from 'ifa-framework';\n\n"
+    ? "import { CognitoPage } from 'cognito-framework';\n\n"
     : "";
 
   // Example 1: Basic navigation
   await fs.writeFile(
-    path.join(projectPath, `src/tests/example-navigation.ifa.${ext}`),
+    path.join(projectPath, `src/tests/example-navigation.cognito.${ext}`),
     `${importStatement}export default async function navigationTest(page${importType}) {
   // Navigate to example site
   await page.goto('https://example.com');
   
   // Take screenshot
   await page.screenshot({ 
-    path: 'ifa-results/screenshots/example-page.png' 
+    path: 'cognito-results/screenshots/example-page.png' 
   });
   
-  console.log('✅ Navigation test passed');
+  console.log('Navigation test passed');
 }`
   );
 
   // Example 2: Smart interactions (if AI Healing enabled)
   if (answers.features.includes("aiHealing")) {
     await fs.writeFile(
-      path.join(projectPath, `src/tests/example-smart-clicks.ifa.${ext}`),
+      path.join(projectPath, `src/tests/example-smart-clicks.cognito.${ext}`),
       `${importStatement}export default async function smartClickTest(page${importType}) {
   await page.goto('https://httpbin.org/forms/post');
   
@@ -771,10 +781,10 @@ async function createExampleTests(projectPath: string, answers: any) {
   
   // Take screenshot for evidence
   await page.screenshot({ 
-    path: 'ifa-results/screenshots/form-filled.png' 
+    path: 'cognito-results/screenshots/form-filled.png' 
   });
   
-  console.log('✅ Smart interaction test passed');
+  console.log('Smart interaction test passed');
 }`
     );
   }
@@ -795,7 +805,7 @@ async function createExampleTests(projectPath: string, answers: any) {
 
   async takeScreenshot(name${answers.useTypeScript ? ": string" : ""}) {
     await this.page.screenshot({ 
-      path: \`ifa-results/screenshots/\${name}.png\` 
+      path: \`cognito-results/screenshots/\${name}.png\` 
     });
   }
 }`
@@ -803,7 +813,7 @@ async function createExampleTests(projectPath: string, answers: any) {
 
   // Example using Page Object
   await fs.writeFile(
-    path.join(projectPath, `src/tests/example-with-pom.ifa.${ext}`),
+    path.join(projectPath, `src/tests/example-with-pom.cognito.${ext}`),
     `${importStatement}import { ExamplePage } from '../pages/ExamplePage.js';
 
 export default async function pomTest(page${importType}) {
@@ -813,7 +823,7 @@ export default async function pomTest(page${importType}) {
   await examplePage.clickMoreInfo();
   await examplePage.takeScreenshot('pom-example');
   
-  console.log('✅ POM test passed');
+  console.log('POM test passed');
 }`
   );
 }
@@ -826,7 +836,7 @@ async function createVSCodeConfig(projectPath: string) {
       "editor.formatOnSave": true,
       "files.exclude": {
         node_modules: true,
-        "ifa-results": true,
+        "cognito-results": true,
         dist: true,
       },
     },
@@ -839,7 +849,7 @@ async function createVSCodeConfig(projectPath: string) {
       version: "0.2.0",
       configurations: [
         {
-          name: "Debug IFA Test",
+          name: "Debug Cognito Test",
           type: "node",
           request: "launch",
           runtimeExecutable: "npm",
@@ -853,7 +863,7 @@ async function createVSCodeConfig(projectPath: string) {
 }
 
 async function createGithubWorkflow(projectPath: string, answers: any) {
-  const workflow = `name: IFA Tests
+  const workflow = `name: Cognito Tests
 
 on:
   push:
@@ -887,8 +897,8 @@ jobs:
       uses: actions/upload-artifact@v3
       if: always()
       with:
-        name: ifa-results
-        path: ifa-results/
+        name: cognito-results
+        path: cognito-results/
         retention-days: 30
 ${
   answers.features.includes("allure")
@@ -902,7 +912,7 @@ ${
       if: always()
       with:
         name: allure-report
-        path: ifa-results/allure-report/
+        path: cognito-results/allure-report/
 `
     : ""
 }`;
