@@ -8,3 +8,4 @@ bin/
 test-results
 fau-results/
 *.txt
+bin/
