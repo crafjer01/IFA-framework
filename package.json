@@ -1,5 +1,5 @@
 {
-  "name": "ifa-framework",
+  "name": "cognito-framework",
   "version": "0.1.9",
   "description": "IDCAS web automation framework with TypeScript and Playwright",
   "main": "dist/index.js",
@@ -25,7 +25,7 @@
   ],
   "scripts": {
     "clean": "rm -rf dist bin",
-    "copy:bin": "mkdir bin && cp src/bin/ifa.js bin/ifa.js",
+    "copy:bin": "mkdir bin && cp src/bin/cognito.js bin/cognito.js",
     "compile": "tsc",
     "dev": "tsc --watch",
     "test": "playwright test",

@@ -1,18 +1,18 @@
 import { Browser, BrowserContext } from "@playwright/test";
-import { IFAConfig, TestResult, IFAPage } from "./Types.js";
+import { CognitoConfig, TestResult, CognitoPage } from "./Types.js";
 import { ConfigManager } from "./ConfigManager.js";
 import { Logger } from "./Logger.js";
 import { ReportingEngine } from "./ReportingEngine.js";
-import { IFAPageWrapper } from "./CognitoPageWrapper.js";
+import { CognitoPageWrapper } from "./CognitoPageWrapper.js";
 
 export class CognitoEngine {
-  private config: IFAConfig;
+  private config: CognitoConfig;
   private logger: Logger;
   private reportingEngine: ReportingEngine;
   private browser?: Browser;
   private context?: BrowserContext;
 
-  constructor(config?: Partial<IFAConfig>) {
+  constructor(config?: Partial<CognitoConfig>) {
     this.config = ConfigManager.loadConfig(config);
     this.logger = new Logger(this.config.logging);
     this.reportingEngine = new ReportingEngine(this.config.reporting);
@@ -39,13 +39,13 @@ export class CognitoEngine {
     }
   }
 
-  async newPage(): Promise<IFAPage> {
+  async newPage(): Promise<CognitoPage> {
     if (!this.context) {
       throw new Error("Engine not initialized. Call initialize() first.");
     }
 
     const page = await this.context.newPage();
-    const fauPage = new IFAPageWrapper(page, this.config, this.logger);
+    const fauPage = new CognitoPageWrapper(page, this.config, this.logger);
 
     // Setup automatic screenshot on failure
     page.on("pageerror", async (error) => {
@@ -56,7 +56,7 @@ export class CognitoEngine {
   }
 
   async runTest(
-    testFn: (page: IFAPage) => Promise<void>,
+    testFn: (page: CognitoPage) => Promise<void>,
     testName: string
   ): Promise<TestResult> {
     const startTime = Date.now();
@@ -94,7 +94,7 @@ export class CognitoEngine {
   }
 
   async runTestSuite(
-    tests: Array<{ name: string; fn: (page: IFAPage) => Promise<void> }>
+    tests: Array<{ name: string; fn: (page: CognitoPage) => Promise<void> }>
   ): Promise<TestResult[]> {
     const results: TestResult[] = [];
 
@@ -118,7 +118,7 @@ export class CognitoEngine {
   }
 
   private async captureFailureEvidence(
-    page: IFAPage,
+    page: CognitoPage,
     _error: Error
   ): Promise<void> {
     try {
