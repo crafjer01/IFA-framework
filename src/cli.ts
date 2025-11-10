@@ -9,6 +9,7 @@ import { glob } from "glob";
 import { CognitoEngine } from "./core/CognitoEngine.js";
 import { pathToFileURL } from "url";
 import { spawn } from "child_process";
+import { getTestRegistry, clearTestRegistry } from "./core/TestRunner.js";
 
 const program = new Command();
 
@@ -33,6 +34,7 @@ program
   .option("-t, --test <pattern>", "Test file pattern", "**/*.cognito.{js,ts}")
   .option("-h, --headless", "Run in headless mode")
   .option("-d, --debug", "Enable debug mode")
+  .option("--grep <pattern>", "Only run tests matching pattern")
   .action(async (options) => {
     await runCommand(options);
   });
@@ -237,59 +239,13 @@ async function initCommand(projectNameArg?: string, _options?: any) {
   }
 }
 
-/**
- * Detecta si necesitamos cargar TypeScript y reinicia el proceso con tsx
- */
-async function ensureTypeScriptSupport(testFiles: string[]): Promise<boolean> {
-  const hasTypescriptFiles = testFiles.some((f) => f.endsWith(".ts"));
-
-  // Si no hay archivos TS o ya estamos corriendo con tsx, continuar normal
-  if (!hasTypescriptFiles || process.env.COGNITO_TS_LOADED === "1") {
-    return true;
-  }
-
-  // Verificar si tsx está disponible
-  try {
-    await import("tsx");
-  } catch {
-    console.log(
-      chalk.yellow("\nTypeScript files detected but tsx is not installed.")
-    );
-    console.log(chalk.blue("Please install tsx: npm install --save-dev tsx\n"));
-    return false;
-  }
-
-  // Re-ejecutar el comando con tsx
-  console.log(chalk.gray("Loading TypeScript support...\n"));
-
-  return new Promise((_resolve) => {
-    // Usar tsx como loader
-    const args = ["--import", "tsx", ...process.argv.slice(1)];
-
-    const child = spawn(process.execPath, args, {
-      stdio: "inherit",
-      env: { ...process.env, COGNITO_TS_LOADED: "1" },
-    });
-
-    child.on("exit", (code) => {
-      process.exit(code || 0);
-    });
-
-    child.on("error", (error) => {
-      console.error(
-        chalk.red("Failed to start with TypeScript support:"),
-        error
-      );
-      process.exit(1);
-    });
-  });
-}
-
+// ============================================
+// RUN COMMAND - UPDATED FOR test() API
+// ============================================
 async function runCommand(options: any) {
   const spinner = ora("Starting Cognito test run...").start();
 
   try {
-    // Encontrar archivos de test primero
     const testFiles = await findTestFiles(options.test);
 
     if (testFiles.length === 0) {
@@ -300,7 +256,6 @@ async function runCommand(options: any) {
       return;
     }
 
-    // Verificar y cargar soporte TypeScript si es necesario
     const canContinue = await ensureTypeScriptSupport(testFiles);
     if (!canContinue) {
       spinner.stop();
@@ -334,43 +289,116 @@ async function runCommand(options: any) {
     await engine.initialize();
     spinner.succeed("Cognito Engine initialized");
 
-    console.log(chalk.blue(`Found ${testFiles.length} test file(s)`));
+    console.log(chalk.blue(`\n📁 Found ${testFiles.length} test file(s)\n`));
 
-    const results = [];
+    const allResults: any[] = [];
 
     for (const testFile of testFiles) {
-      console.log(chalk.gray(`Running ${testFile}...`));
+      console.log(chalk.gray(`📄 Loading: ${path.basename(testFile)}`));
+
+      // Clear registry before each file
+      clearTestRegistry();
+
       try {
-        // Importar el archivo de test directamente
-        const testModule = await import(
-          pathToFileURL(path.resolve(testFile)).href
+        // Import the test file (this registers tests via test() calls)
+        await import(pathToFileURL(path.resolve(testFile)).href);
+
+        // Get all registered tests
+        const registry = getTestRegistry();
+        const testsToRun = registry.getTestsToRun();
+
+        if (testsToRun.length === 0) {
+          console.log(
+            chalk.yellow(`  ⚠️  No tests found in ${path.basename(testFile)}`)
+          );
+          continue;
+        }
+
+        // Filter by grep pattern if provided
+        const filteredTests = options.grep
+          ? testsToRun.filter((t) => t.name.includes(options.grep))
+          : testsToRun;
+
+        if (filteredTests.length === 0) {
+          console.log(
+            chalk.yellow(`  ⚠️  No tests match pattern: ${options.grep}`)
+          );
+          continue;
+        }
+
+        console.log(
+          chalk.blue(`  Running ${filteredTests.length} test(s)...\n`)
         );
 
-        if (testModule.default && typeof testModule.default === "function") {
-          const page = await engine.newPage();
-          await testModule.default(page);
-          results.push({ name: testFile, status: "passed" });
-          await page.close();
-        } else {
-          throw new Error(`Test file must export a default function`);
+        // Run each test
+        for (const test of filteredTests) {
+          const startTime = Date.now();
+
+          try {
+            const page = await engine.newPage();
+
+            console.log(chalk.gray(`  ▶️  ${test.name}`));
+
+            await test.fn(page);
+
+            const duration = Date.now() - startTime;
+            console.log(chalk.green(`  ✅ ${test.name} (${duration}ms)`));
+
+            allResults.push({
+              name: test.name,
+              file: testFile,
+              status: "passed",
+              duration,
+            });
+
+            await page.close();
+          } catch (error: any) {
+            const duration = Date.now() - startTime;
+            console.error(chalk.red(`  ❌ ${test.name} (${duration}ms)`));
+            console.error(chalk.red(`     ${error.message}`));
+
+            allResults.push({
+              name: test.name,
+              file: testFile,
+              status: "failed",
+              duration,
+              error: error.message,
+              stack: error.stack,
+            });
+          }
         }
-      } catch (error) {
-        console.error(chalk.red(`Test failed: ${testFile}`), error);
-        results.push({ name: testFile, status: "failed", error });
+
+        console.log(); // Empty line between files
+      } catch (error: any) {
+        console.error(
+          chalk.red(`  ❌ Failed to load test file: ${error.message}`)
+        );
+        allResults.push({
+          name: path.basename(testFile),
+          file: testFile,
+          status: "failed",
+          error: error.message,
+        });
       }
     }
 
     await engine.close();
 
-    const passed = results.filter((r) => r.status === "passed").length;
-    const failed = results.filter((r) => r.status === "failed").length;
+    // Print summary
+    const passed = allResults.filter((r) => r.status === "passed").length;
+    const failed = allResults.filter((r) => r.status === "failed").length;
+    const total = allResults.length;
 
-    console.log(
-      chalk.green(`\nTests completed: ${passed} passed, ${failed} failed`)
-    );
+    console.log(chalk.blue("━".repeat(60)));
+    console.log(chalk.bold("\n📊 Test Summary\n"));
+    console.log(chalk.green(`  ✅ Passed: ${passed}/${total}`));
+    console.log(chalk.red(`  ❌ Failed: ${failed}/${total}`));
 
     if (failed > 0) {
+      console.log(chalk.red("\n❌ Some tests failed\n"));
       process.exit(1);
+    } else {
+      console.log(chalk.green("\n✅ All tests passed!\n"));
     }
   } catch (error) {
     spinner.fail("Test run failed");
@@ -378,9 +406,11 @@ async function runCommand(options: any) {
     process.exit(1);
   }
 }
-
+// ============================================
+// DEBUG COMMAND - UPDATED
+// ============================================
 async function debugCommand(testFile: string) {
-  console.log(chalk.blue(`Debug mode: ${testFile}`));
+  console.log(chalk.blue(`🔍 Debug mode: ${testFile}\n`));
 
   const engine = new CognitoEngine({
     browser: {
@@ -397,7 +427,7 @@ async function debugCommand(testFile: string) {
       element: 10000,
     },
     reporting: {
-      html: { enabled: true, openAfter: !process.env.CI },
+      html: { enabled: true, openAfter: false },
       allure: { enabled: false },
       custom: { enabled: false },
     },
@@ -410,12 +440,35 @@ async function debugCommand(testFile: string) {
     await engine.initialize();
 
     if (await fs.pathExists(testFile)) {
-      const testModule = await import("file://" + path.resolve(testFile));
-      if (testModule.default) {
+      clearTestRegistry();
+
+      await import(pathToFileURL(path.resolve(testFile)).href);
+
+      const registry = getTestRegistry();
+      const tests = registry.getTestsToRun();
+
+      if (tests.length === 0) {
+        console.log(chalk.yellow("No tests found in file"));
+        return;
+      }
+
+      console.log(
+        chalk.blue(`Found ${tests.length} test(s), running in debug mode...\n`)
+      );
+
+      for (const test of tests) {
+        console.log(chalk.gray(`▶️  Running: ${test.name}`));
         const page = await engine.newPage();
-        console.log(chalk.gray("Starting test in debug mode..."));
-        await testModule.default(page);
-        console.log(chalk.green("Test completed successfully!"));
+
+        try {
+          await test.fn(page);
+          console.log(chalk.green(`✅ ${test.name} passed`));
+        } catch (error: any) {
+          console.error(chalk.red(`❌ ${test.name} failed:`));
+          console.error(chalk.red(error.message));
+        }
+
+        await page.close();
       }
     } else {
       console.error(chalk.red(`Test file not found: ${testFile}`));
@@ -424,6 +477,66 @@ async function debugCommand(testFile: string) {
     console.error(chalk.red("Debug session failed:"), error);
   } finally {
     await engine.close();
+  }
+}
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+/**
+ * Detecta si necesitamos cargar TypeScript y reinicia el proceso con tsx
+ */
+async function ensureTypeScriptSupport(testFiles: string[]): Promise<boolean> {
+  const hasTypescriptFiles = testFiles.some((f) => f.endsWith(".ts"));
+
+  if (!hasTypescriptFiles || process.env.COGNITO_TS_LOADED === "1") {
+    return true;
+  }
+
+  try {
+    await import("tsx");
+  } catch {
+    console.log(
+      chalk.yellow("\nTypeScript files detected but tsx is not installed.")
+    );
+    console.log(chalk.blue("Please install tsx: npm install --save-dev tsx\n"));
+    return false;
+  }
+
+  console.log(chalk.gray("Loading TypeScript support...\n"));
+
+  return new Promise((_resolve) => {
+    const args = ["--import", "tsx", ...process.argv.slice(1)];
+
+    const child = spawn(process.execPath, args, {
+      stdio: "inherit",
+      env: { ...process.env, COGNITO_TS_LOADED: "1" },
+    });
+
+    child.on("exit", (code) => {
+      process.exit(code || 0);
+    });
+
+    child.on("error", (error) => {
+      console.error(
+        chalk.red("Failed to start with TypeScript support:"),
+        error
+      );
+      process.exit(1);
+    });
+  });
+}
+
+async function findTestFiles(pattern: string): Promise<string[]> {
+  try {
+    const files = await glob(pattern, {
+      ignore: ["node_modules/**", "dist/**"],
+      absolute: true,
+    });
+    return files;
+  } catch (err) {
+    console.error("Error finding test files:", err);
+    throw err;
   }
 }
 
@@ -921,19 +1034,6 @@ ${
     path.join(projectPath, ".github/workflows/tests.yml"),
     workflow
   );
-}
-
-async function findTestFiles(pattern: string): Promise<string[]> {
-  try {
-    const files = await glob(pattern, {
-      ignore: ["node_modules/**", "dist/**"],
-      absolute: true,
-    });
-    return files;
-  } catch (err) {
-    console.error("Error finding test files:", err);
-    throw err;
-  }
 }
 
 export function defineConfig(config: any) {

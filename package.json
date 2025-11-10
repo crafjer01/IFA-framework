@@ -6,7 +6,7 @@
   "type": "module",
   "types": "dist/global.d.ts",
   "bin": {
-    "Cognito": "./bin/cognito.js"
+    "cognito": "./bin/cognito.js"
   },
   "exports": {
     ".": {
