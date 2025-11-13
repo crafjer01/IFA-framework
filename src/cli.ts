@@ -123,8 +123,8 @@ async function initCommand(projectNameArg?: string, _options?: any) {
 
     // Create complete directory structure
     const directories = [
-      "src/tests",
-      "src/pages",
+      "tests/examples",
+      "src//pages/examples",
       "src/utils",
       "cognito-results/screenshots",
       "cognito-results/reports",
@@ -224,8 +224,8 @@ async function initCommand(projectNameArg?: string, _options?: any) {
   │   ├── tests/           # Your test files
   │   ├── pages/           # Page Object Models
   │   └── utils/           # Utility functions
-  ├── cognito-results/         # Test results and reports
-  ├── cognito.config.ts        # Cognito configuration
+  ├── cognito-results/     # Test results and reports
+  ├── cognito.config.ts    # Cognito configuration
   ├── package.json
   └── README.md
     `)
@@ -243,7 +243,7 @@ async function initCommand(projectNameArg?: string, _options?: any) {
 // RUN COMMAND - UPDATED FOR test() API
 // ============================================
 async function runCommand(options: any) {
-  const spinner = ora("Starting Cognito test run...").start();
+  const spinner = ora().start();
 
   try {
     const testFiles = await findTestFiles(options.test);
@@ -287,7 +287,7 @@ async function runCommand(options: any) {
     });
 
     await engine.initialize();
-    spinner.succeed("Cognito Engine initialized");
+    spinner.succeed("Cognito Tests initialized");
 
     console.log(chalk.blue(`\n📁 Found ${testFiles.length} test file(s)\n`));
 
@@ -309,7 +309,7 @@ async function runCommand(options: any) {
 
         if (testsToRun.length === 0) {
           console.log(
-            chalk.yellow(`  ⚠️  No tests found in ${path.basename(testFile)}`)
+            chalk.yellow(`No tests found in ${path.basename(testFile)}`)
           );
           continue;
         }
@@ -320,9 +320,7 @@ async function runCommand(options: any) {
           : testsToRun;
 
         if (filteredTests.length === 0) {
-          console.log(
-            chalk.yellow(`  ⚠️  No tests match pattern: ${options.grep}`)
-          );
+          console.log(chalk.yellow(`No tests match pattern: ${options.grep}`));
           continue;
         }
 
@@ -337,12 +335,11 @@ async function runCommand(options: any) {
           try {
             const page = await engine.newPage();
 
-            console.log(chalk.gray(`  ▶️  ${test.name}`));
-
             await test.fn(page);
 
             const duration = Date.now() - startTime;
-            console.log(chalk.green(`  ✅ ${test.name} (${duration}ms)`));
+            //console.log(chalk.gray(`${test.name} passed - (${duration}ms)`));
+            spinner.succeed(`${test.name} passed - (${duration}ms)`);
 
             allResults.push({
               name: test.name,
@@ -502,8 +499,6 @@ async function ensureTypeScriptSupport(testFiles: string[]): Promise<boolean> {
     console.log(chalk.blue("Please install tsx: npm install --save-dev tsx\n"));
     return false;
   }
-
-  console.log(chalk.gray("Loading TypeScript support...\n"));
 
   return new Promise((_resolve) => {
     const args = ["--import", "tsx", ...process.argv.slice(1)];
@@ -717,7 +712,7 @@ function generateReadme(projectName: string, answers: any): string {
 
 Cognito Framework test automation project
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Node.js 16+ installed
@@ -760,7 +755,7 @@ ${projectName}/
 └── package.json
 \`\`\`
 
-## 📝 Writing Tests
+## Writing Tests
 
 Create test files in \`src/tests/\` with \`.cognito.${
     answers.useTypeScript ? "ts" : "js"
@@ -787,11 +782,11 @@ export default async function myTest(page${
 }
 \`\`\`
 
-## 🎯 Features Enabled
+## Features Enabled
 
 ${answers.features.map((f: string) => `- ${f}`).join("\n")}
 
-## 📊 Reports
+## Reports
 
 Test reports are generated in \`cognito-results/reports/\`
 
@@ -808,7 +803,7 @@ npm run allure:open
     : ""
 }
 
-## 🔧 Configuration
+## Configuration
 
 Edit \`cognito.config.${answers.useTypeScript ? "ts" : "js"}\` to customize:
 - Browser settings
@@ -821,7 +816,7 @@ Edit \`cognito.config.${answers.useTypeScript ? "ts" : "js"}\` to customize:
 - [Cognito Framework Docs](https://cognito-framework.dev)
 - [Playwright API](https://playwright.dev)
 
-## 🤝 Contributing
+## Contributing
 
 1. Write tests in \`src/tests/\`
 2. Follow naming convention: \`*.cognito.${
@@ -861,59 +856,63 @@ DEBUG=false
 async function createExampleTests(projectPath: string, answers: any) {
   const ext = answers.useTypeScript ? "ts" : "js";
   const importType = answers.useTypeScript ? ": CognitoPage" : "";
-  const importStatement = answers.useTypeScript
+  const importAllStatement = answers.useTypeScript
+    ? "import { test, CognitoPage, expect } from 'cognito-framework';\n\n"
+    : "";
+  const importPageStatement = answers.useTypeScript
     ? "import { CognitoPage } from 'cognito-framework';\n\n"
     : "";
 
   // Example 1: Basic navigation
   await fs.writeFile(
-    path.join(projectPath, `src/tests/example-navigation.cognito.${ext}`),
-    `${importStatement}export default async function navigationTest(page${importType}) {
-  // Navigate to example site
+    path.join(projectPath, `tests/examples/simple.cognito.${ext}`),
+    `${importAllStatement}test('Navigate to example.com', async (page: CognitoPage) => {
   await page.goto('https://example.com');
-  
-  // Take screenshot
-  await page.screenshot({ 
-    path: 'cognito-results/screenshots/example-page.png' 
-  });
-  
-  console.log('Navigation test passed');
-}`
+  await page.screenshot({ path: 'cognito-results/screenshots/example.png' });
+});
+
+test('Click more information link', async (page: CognitoPage) => {
+  await page.goto('https://example.com');
+  await page.smartClick('More');
+});
+`
   );
 
   // Example 2: Smart interactions (if AI Healing enabled)
-  if (answers.features.includes("aiHealing")) {
-    await fs.writeFile(
-      path.join(projectPath, `src/tests/example-smart-clicks.cognito.${ext}`),
-      `${importStatement}export default async function smartClickTest(page${importType}) {
-  await page.goto('https://httpbin.org/forms/post');
-  
-  // Use smart locators - finds elements by description
-  await page.smartFill('custname', 'John Doe');
-  await page.smartFill('custtel', '555-1234');
-  
-  // Take screenshot for evidence
-  await page.screenshot({ 
-    path: 'cognito-results/screenshots/form-filled.png' 
-  });
-  
-  console.log('Smart interaction test passed');
-}`
-    );
-  }
+  //   if (answers.features.includes("aiHealing")) {
+  //     await fs.writeFile(
+  //       path.join(projectPath, `src/tests/example-smart-clicks.cognito.${ext}`),
+  //       `${importAllStatement}export default async function smartClickTest(page${importType}) {
+  //   await page.goto('https://httpbin.org/forms/post');
+
+  //   // Use smart locators - finds elements by description
+  //   await page.smartFill('custname', 'John Doe');
+  //   await page.smartFill('custtel', '555-1234');
+
+  //   // Take screenshot for evidence
+  //   await page.screenshot({
+  //     path: 'cognito-results/screenshots/form-filled.png'
+  //   });
+
+  //   console.log('Smart interaction test passed');
+  // }`
+  //     );
+  //   }
 
   // Example 3: Page Object Model
   await fs.writeFile(
-    path.join(projectPath, `src/pages/ExamplePage.${ext}`),
-    `${importStatement}export class ExamplePage {
+    path.join(projectPath, `src/pages/examples/ExamplePage.${ext}`),
+    `${importPageStatement}export class ExamplePage {
   constructor(private page${importType}) {}
 
   async navigate() {
-    await this.page.goto('https://example.com');
+    await this.page.goto("https://the-internet.herokuapp.com/login");
   }
 
-  async clickMoreInfo() {
-    await this.page.smartClick('More information');
+  async login(username: string, password: string) {
+    await this.page.smartFill("Username", username);
+    await this.page.smartFill("Password", password);
+    await this.page.smartClick("Login");
   }
 
   async takeScreenshot(name${answers.useTypeScript ? ": string" : ""}) {
@@ -921,23 +920,53 @@ async function createExampleTests(projectPath: string, answers: any) {
       path: \`cognito-results/screenshots/\${name}.png\` 
     });
   }
+  
+  async getMessage() {
+    return this.page.getPage().locator("#flash");
+  }
 }`
   );
 
   // Example using Page Object
   await fs.writeFile(
-    path.join(projectPath, `src/tests/example-with-pom.cognito.${ext}`),
-    `${importStatement}import { ExamplePage } from '../pages/ExamplePage.js';
+    path.join(projectPath, `tests/examples/login.cognito.${ext}`),
+    `${importAllStatement}import { ExamplePage } from '../../src/pages/examples/ExamplePage';
 
-export default async function pomTest(page${importType}) {
-  const examplePage = new ExamplePage(page);
+ test("Should login with valid credentials", async (page: CognitoPage) => {
+    const examplePage = new ExamplePage(page);
+
+    await examplePage.navigate();
+
+    await examplePage.login("tomsmith", "SuperSecretPassword!");
+
+    const message = await examplePage.getMessage();
+
+    await expect(message).toContainText("logged into a secure area");
+  });
+
+  test("Should show error with invalid username", async (page: CognitoPage) => {
+    const examplePage = new ExamplePage(page);
+
+    await examplePage.navigate();
+
+    await examplePage.login("Invalid", "SuperSecretPassword!");
+
+    const message = await examplePage.getMessage();
+    expect(await message.textContent()).toContain("Your username is invalid!");
+  });
+
+  test("Should show error with invalid password", async (page: CognitoPage) => {
+    const examplePage = new ExamplePage(page);
+
+    await examplePage.navigate();
+
+    await examplePage.login("tomsmith", "SuperSecretPassword");
+
+    const message = await examplePage.getMessage();
+    expect(await message.textContent()).toContain("Your password is invalid!");
+  });
   
-  await examplePage.navigate();
-  await examplePage.clickMoreInfo();
-  await examplePage.takeScreenshot('pom-example');
-  
-  console.log('POM test passed');
-}`
+  `
   );
 }
 

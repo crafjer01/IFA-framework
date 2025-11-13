@@ -45,14 +45,14 @@ export class CognitoEngine {
     }
 
     const page = await this.context.newPage();
-    const fauPage = new CognitoPageWrapper(page, this.config, this.logger);
+    const CognitPage = new CognitoPageWrapper(page, this.config, this.logger);
 
     // Setup automatic screenshot on failure
     page.on("pageerror", async (error) => {
-      await this.captureFailureEvidence(fauPage, error);
+      await this.captureFailureEvidence(CognitPage, error);
     });
 
-    return fauPage;
+    return CognitPage;
   }
 
   async runTest(

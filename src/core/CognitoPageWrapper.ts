@@ -1,8 +1,9 @@
 import { Page } from "playwright";
-import { CognitoConfig, CognitoPage } from "./Types";
-import { Logger } from "./Logger";
+import { CognitoConfig, CognitoPage } from "./Types.js";
+import { Logger } from "./Logger.js";
 import * as fsExtra from "fs-extra";
 import * as path from "path";
+import { SmartPage } from "./SmartPage.js";
 
 const fs = (fsExtra as any).existsSync ? fsExtra : (fsExtra as any).default;
 
@@ -11,11 +12,18 @@ export class CognitoPageWrapper implements CognitoPage {
   private config: CognitoConfig;
   private logger: Logger;
   private stepCounter: number = 0;
+  private smartPage: SmartPage;
 
   constructor(page: Page, config: CognitoConfig, logger: Logger) {
     this.page = page;
     this.config = config;
     this.logger = logger;
+
+    // ← NUEVO: Inicializar SmartPage con opciones del config
+    this.smartPage = new SmartPage(page, {
+      timeout: config.timeouts.element,
+      maxRetries: 3,
+    });
 
     // Setup automatic logging for network requests
     this.setupNetworkLogging();
@@ -59,10 +67,16 @@ export class CognitoPageWrapper implements CognitoPage {
       const filename = `step-${this.stepCounter}-${action}-${timestamp}.png`;
       const filepath = path.join("cognito-results", "screenshots", filename);
 
+      // Asegurar que el directorio existe
       await fs.ensureDir(path.dirname(filepath));
-      await this.page.screenshot({ path: filepath, fullPage: false });
 
-      this.logger.debug(`Step screenshot taken: ${filename}`);
+      // Tomar el screenshot
+      await this.page.screenshot({
+        path: filepath,
+        fullPage: false, // Solo el viewport visible, más rápido
+      });
+
+      //this.logger.info(`Step screenshot saved: ${filename}`);
       return filepath;
     } catch (error) {
       this.logger.warn("Failed to take step screenshot", error as Error);
@@ -71,8 +85,6 @@ export class CognitoPageWrapper implements CognitoPage {
   }
 
   async goto(url: string): Promise<void> {
-    this.logger.info(`Navigating to: ${url}`);
-
     try {
       await this.page.goto(url, {
         timeout: this.config.timeouts.navigation,
@@ -80,7 +92,6 @@ export class CognitoPageWrapper implements CognitoPage {
       });
 
       await this.takeStepScreenshot("goto");
-      this.logger.info(`Successfully navigated to: ${url}`);
     } catch (error) {
       this.logger.error(`Failed to navigate to: ${url}`, error as Error);
       throw error;
@@ -103,8 +114,6 @@ export class CognitoPageWrapper implements CognitoPage {
   }
 
   async fill(selector: string, value: string): Promise<void> {
-    this.logger.info(`Filling element: ${selector} with: ${value}`);
-
     try {
       await this.page.waitForSelector(selector, {
         timeout: this.config.timeouts.element,
@@ -112,8 +121,6 @@ export class CognitoPageWrapper implements CognitoPage {
 
       await this.page.fill(selector, value);
       await this.takeStepScreenshot("fill");
-
-      this.logger.info(`Successfully filled: ${selector}`);
     } catch (error) {
       this.logger.error(`Failed to fill: ${selector}`, error as Error);
       await this.takeStepScreenshot("fill-failed");
@@ -150,80 +157,89 @@ export class CognitoPageWrapper implements CognitoPage {
     await this.page.setContent(html, options);
   }
 
-  // Enhanced methods (basic implementation for Sprint 1, will be improved in Sprint 3-4)
+  /**
+   * Smart click - usa SmartPage para encontrar elementos inteligentemente
+   */
   async smartClick(description: string): Promise<void> {
-    this.logger.info(`Smart clicking: ${description}`);
+    try {
+      // ← DELEGAMOS a SmartPage que tiene la lógica avanzada
+      await this.smartPage.smartClick(description, {
+        timeout: this.config.timeouts.element,
+      });
 
-    // For Sprint 1, we'll use basic text-based search
-    // This will be enhanced with AI in Sprint 3-4
-    const textSelector = `text=${description}`;
-    const roleSelector = `[role*="${description.toLowerCase()}"]`;
-    const ariaSelector = `[aria-label*="${description}"]`;
-
-    const selectors = [textSelector, roleSelector, ariaSelector];
-
-    for (const selector of selectors) {
-      try {
-        await this.page.waitForSelector(selector, { timeout: 2000 });
-        await this.page.click(selector);
-        await this.takeStepScreenshot("smart-click");
-        this.logger.info(`Smart click successful with selector: ${selector}`);
-        return;
-      } catch {
-        // Try next selector
-      }
+      await this.takeStepScreenshot("smart-click");
+    } catch (error) {
+      this.logger.error(`Smart click failed: ${description}`, error as Error);
+      await this.takeStepScreenshot("smart-click-failed");
+      throw error;
     }
-
-    throw new Error(`Could not find element for smart click: ${description}`);
   }
 
+  /**
+   * Smart fill - usa SmartPage para encontrar inputs inteligentemente
+   */
   async smartFill(description: string, value: string): Promise<void> {
-    this.logger.info(`Smart filling: ${description} with: ${value}`);
+    try {
+      // ← DELEGAMOS a SmartPage que tiene la lógica avanzada
+      await this.smartPage.smartFill(description, value, {
+        timeout: this.config.timeouts.element,
+      });
 
-    // Basic implementation for Sprint 1
-    const labelSelector = `input[aria-label*="${description}"]`;
-    const placeholderSelector = `input[placeholder*="${description}"]`;
-    const nameSelector = `input[name*="${description.toLowerCase()}"]`;
-
-    const selectors = [labelSelector, placeholderSelector, nameSelector];
-
-    for (const selector of selectors) {
-      try {
-        await this.page.waitForSelector(selector, { timeout: 2000 });
-        await this.page.fill(selector, value);
-        await this.takeStepScreenshot("smart-fill");
-        this.logger.info(`Smart fill successful with selector: ${selector}`);
-        return;
-      } catch {
-        // Try next selector
-      }
+      await this.takeStepScreenshot("smart-fill");
+    } catch (error) {
+      this.logger.error(`Smart fill failed: ${description}`, error as Error);
+      await this.takeStepScreenshot("smart-fill-failed");
+      throw error;
     }
-
-    throw new Error(
-      `Could not find input element for smart fill: ${description}`
-    );
   }
 
+  /**
+   * Adaptive wait - espera inteligente por condiciones
+   */
   async adaptiveWait(condition: string): Promise<void> {
-    this.logger.info(`Adaptive waiting for: ${condition}`);
-
-    // Basic implementation for Sprint 1
-    if (condition.includes("loading")) {
-      await this.page.waitForLoadState("networkidle");
-    } else if (condition.includes("visible")) {
-      // Extract element from condition
-      const element = condition.split(" ")[0];
-      await this.page.waitForSelector(element);
-    } else {
-      // Default wait
-      await this.page.waitForTimeout(1000);
+    try {
+      // ← DELEGAMOS a SmartPage
+      await this.smartPage.smartWait(condition, {
+        timeout: this.config.timeouts.default,
+      });
+    } catch (error) {
+      this.logger.error(`Adaptive wait failed: ${condition}`, error as Error);
+      throw error;
     }
-
-    this.logger.info(`Adaptive wait completed for: ${condition}`);
   }
 
-  // Expose underlying page for advanced users
+  /**
+   * Smart select - selecciona opciones de dropdowns inteligentemente
+   */
+  async smartSelect(description: string, optionText: string): Promise<void> {
+    try {
+      await this.smartPage.smartSelect(description, optionText, {
+        timeout: this.config.timeouts.element,
+      });
+
+      await this.takeStepScreenshot("smart-select");
+    } catch (error) {
+      this.logger.error(`Smart select failed: ${description}`, error as Error);
+      await this.takeStepScreenshot("smart-select-failed");
+      throw error;
+    }
+  }
+
+  // ============================================
+  // UTILITY METHODS
+  // ============================================
+
+  /**
+   * Expose underlying page for advanced users
+   */
   getPage(): Page {
     return this.page;
+  }
+
+  /**
+   * Get the SmartPage instance for advanced usage
+   */
+  getSmartPage(): SmartPage {
+    return this.smartPage;
   }
 }

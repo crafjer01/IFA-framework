@@ -1,26 +1,77 @@
-// Smart Local Options
+// src/core/types/SmartLocator.ts
+import { ElementHandle } from "@playwright/test";
+
+/**
+ * Options for SmartLocator
+ */
 export interface SmartLocatorOptions {
-  threshold?: number; // 0-1 for fuzzy matching
+  /**
+   * Maximum time to wait for element (ms)
+   */
   timeout?: number;
-  ignoreCase?: boolean;
-  trimWhitespace?: boolean;
-  languages?: string[];
+
+  /**
+   * Maximum number of retry attempts
+   */
   maxRetries?: number;
+
+  /**
+   * Minimum confidence score (0-1)
+   */
+  confidence?: number;
+
+  /**
+   * Enable debug logging
+   */
+  debug?: boolean;
 }
 
+/**
+ * Result from locator search
+ */
 export interface LocatorResult {
-  element: any; // Playwright element
+  /**
+   * The found element handle
+   */
+  element: ElementHandle;
+
+  /**
+   * The selector used to find the element
+   */
+  selector: string;
+
+  /**
+   * Confidence score (0-1)
+   */
   confidence: number;
+
+  /**
+   * Strategy name that found the element
+   */
   strategy: string;
-  matchedText?: string;
-  selector?: string;
 }
 
-export interface TextLocatorConfig {
-  exactMatch: boolean;
-  partialMatch: boolean;
-  fuzzyMatch: boolean;
-  ariaLabelMatch: boolean;
-  placeholderMatch: boolean;
-  titleMatch: boolean;
+/**
+ * Search strategy for locating elements
+ */
+export interface LocatorStrategy {
+  /**
+   * Strategy name
+   */
+  name: string;
+
+  /**
+   * CSS/Playwright selector
+   */
+  selector: string;
+
+  /**
+   * Expected confidence level
+   */
+  confidence?: number;
+
+  /**
+   * Custom handler for complex strategies
+   */
+  handler?: (selector: string) => Promise<LocatorResult | null>;
 }

@@ -2,6 +2,10 @@
 
 import * as fsExtra from "fs-extra";
 import { CognitoConfig } from "./Types.js";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const DIRNAME = path.dirname(fileURLToPath(import.meta.url));
 
 // Determinar el objeto correcto: si fsExtra tiene existsSync, lo usamos; si no, usamos fsExtra.default
 const fs = (fsExtra as any).existsSync ? fsExtra : (fsExtra as any).default;
@@ -77,6 +81,7 @@ export class ConfigManager {
     logging: {
       level: "info",
     },
+    resultsBaseDir: path.resolve(DIRNAME, "test-results", "cognito-results"),
   };
 
   /**
@@ -87,7 +92,7 @@ export class ConfigManager {
     let finalConfig: CognitoConfig = { ...this.defaultConfig };
 
     // 1. Check for JSON config file
-    const jsonConfigPath = "fau.config.json";
+    const jsonConfigPath = "cognito.config.json";
     if (fs.existsSync(jsonConfigPath)) {
       try {
         const fileContent = fs.readFileSync(jsonConfigPath, "utf-8");
@@ -96,24 +101,24 @@ export class ConfigManager {
         // CORRECCIÓN: Usar deep merge para fusionar la configuración del archivo
         finalConfig = deepMerge(finalConfig, fileConfig) as CognitoConfig;
 
-        console.log("Config file fau.config.json found and loaded");
+        console.log("Config file cognito.config.json found and loaded");
       } catch (error) {
-        console.error("Error reading or parsing fau.config.json:", error);
+        console.error("Error reading or parsing cognito.config.json:", error);
       }
     }
 
     // 2. Check for JS/TS config file
-    const jsConfigPath = "fau.config.js";
-    const tsConfigPath = "fau.config.ts";
+    const jsConfigPath = "cognito.config.js";
+    const tsConfigPath = "cognito.config.ts";
 
     if (fs.existsSync(tsConfigPath)) {
-      console.log(
-        "Config file fau.config.ts found but dynamic import not yet implemented"
-      );
+      // console.log(
+      //   "Config file cognito.config.ts found but dynamic import not yet implemented"
+      // );
       // For .ts/.js files, we'll implement dynamic import in next sprint.
     } else if (fs.existsSync(jsConfigPath)) {
       console.log(
-        "Config file fau.config.js found but dynamic import not yet implemented"
+        "Config file cognito.config.js found but dynamic import not yet implemented"
       );
       // For .ts/.js files, we'll implement dynamic import in next sprint.
     }
@@ -132,7 +137,7 @@ export class ConfigManager {
    * Generates a sample configuration file (fau.config.ts) content.
    */
   static generateSampleConfig(): string {
-    return `import { defineConfig } from "@fau/core/types";
+    return `import { defineConfig } from "src/core/types";
 
 export default defineConfig({
   browser: {

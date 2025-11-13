@@ -1,8 +1,7 @@
 // src/core/SmartPage.ts
 import { Page } from "@playwright/test";
-import { SmartTextLocator } from "./locators/SmartTextLocator";
-import { SmartLocatorOptions, LocatorResult } from "./types/SmartLocator";
-
+import { SmartTextLocator } from "./locators/SmartTextLocator.js";
+import { SmartLocatorOptions, LocatorResult } from "./types/SmartLocator.js";
 export class SmartPage {
   private page: Page;
   private textLocator: SmartTextLocator;
@@ -53,18 +52,18 @@ export class SmartPage {
     value: string,
     options?: { timeout?: number }
   ): Promise<void> {
-    console.log(`🔍 smartFill called: "${description}" = "${value}"`);
-    const startTime = Date.now();
+    //console.log(`🔍 smartFill called: "${description}" = "${value}"`);
+    // const startTime = Date.now();
 
     const result = await this.findInputElementWithRetry(
       description,
       options?.timeout
     );
 
-    console.log(
-      `⏱️ findInputElementWithRetry took ${Date.now() - startTime}ms`
-    );
-    console.log(`📊 Result:`, result ? `Found (${result.strategy})` : "null");
+    // console.log(
+    //   `⏱️ findInputElementWithRetry took ${Date.now() - startTime}ms`
+    // );
+    // console.log(`📊 Result:`, result ? `Found (${result.strategy})` : "null");
 
     if (!result || !result.element) {
       throw new Error(
@@ -99,7 +98,7 @@ export class SmartPage {
         value
       );
 
-      console.log(`✅ Successfully filled "${description}" with "${value}"`);
+      // console.log(`✅ Successfully filled "${description}" with "${value}"`);
     } catch (error) {
       console.error(`❌ Fill failed for "${description}":`, error);
       throw new Error(
@@ -191,21 +190,21 @@ export class SmartPage {
             });
 
             // Success! Element found and in desired state
-            console.debug(`Element found and ${state}: ${description}`);
+            // console.debug(`Element found and ${state}: ${description}`);
             return;
           } catch (stateError) {
             // Element found but not in desired state yet, will retry
             lastError = stateError as Error;
-            console.debug(
-              `Element found but not yet in state '${state}', retrying...`
-            );
+            // console.debug(
+            //   `Element found but not yet in state '${state}', retrying...`
+            // );
           }
         } else {
-          console.debug(`Element not found yet: ${description}, retrying...`);
+          // console.debug(`Element not found yet: ${description}, retrying...`);
         }
       } catch (searchError) {
         lastError = searchError as Error;
-        console.debug(`Search error: ${searchError}`);
+        // console.debug(`Search error: ${searchError}`);
       }
 
       // Wait before next iteration
@@ -248,18 +247,18 @@ export class SmartPage {
         }
 
         if (result) {
-          console.log(
-            `Found element but confidence too low: ${result.confidence.toFixed(
-              2
-            )}`
-          );
+          // console.log(
+          //   `Found element but confidence too low: ${result.confidence.toFixed(
+          //     2
+          //   )}`
+          // );
         }
       } catch (error: any) {
         console.log(`Attempt ${attempt} failed:`, error.message);
       }
 
       if (attempt < maxRetries) {
-        console.log(`Waiting ${retryDelay}ms before retry...`);
+        //console.log(`Waiting ${retryDelay}ms before retry...`);
         await this.page.waitForTimeout(retryDelay);
       }
     }
@@ -279,9 +278,9 @@ export class SmartPage {
     const retryDelay = 1000;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      console.log(
-        `🔄 Attempt ${attempt}/${maxRetries} to find input: "${description}"`
-      );
+      // console.log(
+      //   `Attempt ${attempt}/${maxRetries} to find input: "${description}"`
+      // );
 
       try {
         const result = await Promise.race([
@@ -299,25 +298,25 @@ export class SmartPage {
           if (isInput) {
             return result;
           } else {
-            console.log(
-              `Found ${result.selector} but it's not an input, continuing...`
-            );
+            // console.log(
+            //   `Found ${result.selector} but it's not an input, continuing...`
+            // );
           }
         }
 
         if (result) {
-          console.log(
-            `Found element but confidence too low: ${result.confidence.toFixed(
-              2
-            )}`
-          );
+          // console.log(
+          //   `Found element but confidence too low: ${result.confidence.toFixed(
+          //     2
+          //   )}`
+          // );
         }
       } catch (error: any) {
         console.log(`Attempt ${attempt} failed:`, error.message);
       }
 
       if (attempt < maxRetries) {
-        console.log(`Waiting ${retryDelay}ms before retry...`);
+        // console.log(`Waiting ${retryDelay}ms before retry...`);
         await this.page.waitForTimeout(retryDelay);
       }
     }
@@ -337,9 +336,9 @@ export class SmartPage {
     const retryDelay = 1000;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      console.log(
-        `Attempt ${attempt}/${maxRetries} to find select: "${description}"`
-      );
+      // console.log(
+      //   `Attempt ${attempt}/${maxRetries} to find select: "${description}"`
+      // );
 
       try {
         const result = await Promise.race([
@@ -357,9 +356,9 @@ export class SmartPage {
           if (isSelect) {
             return result;
           } else {
-            console.log(
-              `Found ${result.selector} but it's not a select, continuing...`
-            );
+            // console.log(
+            //   `Found ${result.selector} but it's not a select, continuing...`
+            // );
           }
         }
       } catch (error: any) {
@@ -367,7 +366,7 @@ export class SmartPage {
       }
 
       if (attempt < maxRetries) {
-        console.log(`Waiting ${retryDelay}ms before retry...`);
+        // console.log(`Waiting ${retryDelay}ms before retry...`);
         await this.page.waitForTimeout(retryDelay);
       }
     }
