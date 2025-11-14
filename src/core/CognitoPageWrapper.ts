@@ -1,5 +1,5 @@
 import { Page } from "playwright";
-import { CognitoConfig, CognitoPage } from "./Types.js";
+import { CognitoConfigType, CognitoPageType } from "../types/index.js";
 import { Logger } from "./Logger.js";
 import * as fsExtra from "fs-extra";
 import * as path from "path";
@@ -7,14 +7,14 @@ import { SmartPage } from "./SmartPage.js";
 
 const fs = (fsExtra as any).existsSync ? fsExtra : (fsExtra as any).default;
 
-export class CognitoPageWrapper implements CognitoPage {
+export class CognitoPageWrapper implements CognitoPageType {
   private page: Page;
-  private config: CognitoConfig;
+  private config: CognitoConfigType;
   private logger: Logger;
   private stepCounter: number = 0;
   private smartPage: SmartPage;
 
-  constructor(page: Page, config: CognitoConfig, logger: Logger) {
+  constructor(page: Page, config: CognitoConfigType, logger: Logger) {
     this.page = page;
     this.config = config;
     this.logger = logger;

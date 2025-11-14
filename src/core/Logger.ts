@@ -1,12 +1,12 @@
 import * as fsExtra from "fs-extra";
 import chalk from "chalk";
-import { LogEntry } from "./Types.js";
+import { LogEntryType } from "../types/index.js";
 
 // Determinar el objeto correcto: si fsExtra tiene existsSync, lo usamos; si no, usamos fsExtra.default
 const fs = (fsExtra as any).existsSync ? fsExtra : (fsExtra as any).default;
 
 export class Logger {
-  private logs: LogEntry[] = [];
+  private logs: LogEntryType[] = [];
   private config: { level: string; file?: string };
 
   constructor(config: { level: string; file?: string }) {
@@ -26,7 +26,7 @@ export class Logger {
   }
 
   private addLog(level: string, message: string, error?: Error): void {
-    const entry: LogEntry = {
+    const entry: LogEntryType = {
       level,
       message,
       timestamp: new Date().toISOString(),
@@ -68,7 +68,7 @@ export class Logger {
     }
   }
 
-  getLogs(): LogEntry[] {
+  getLogs(): LogEntryType[] {
     return [...this.logs];
   }
 

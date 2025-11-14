@@ -1,13 +1,13 @@
 // src/core/SmartPage.ts
 import { Page } from "@playwright/test";
 import { SmartTextLocator } from "./locators/SmartTextLocator.js";
-import { SmartLocatorOptions, LocatorResult } from "./types/SmartLocator.js";
+import { SmartLocatorOptionsType, LocatorResultType } from "../types/index.js";
 export class SmartPage {
   private page: Page;
   private textLocator: SmartTextLocator;
-  private options: SmartLocatorOptions;
+  private options: SmartLocatorOptionsType;
 
-  constructor(page: Page, options: SmartLocatorOptions = {}) {
+  constructor(page: Page, options: SmartLocatorOptionsType = {}) {
     this.page = page;
     this.options = options;
     this.textLocator = new SmartTextLocator(page, options);
@@ -225,7 +225,7 @@ export class SmartPage {
   private async findElementWithRetry(
     description: string,
     timeout?: number
-  ): Promise<LocatorResult | null> {
+  ): Promise<LocatorResultType | null> {
     const maxRetries = this.options.maxRetries || 3;
     const timeoutMs = timeout || this.options.timeout || 30000;
     const retryDelay = 500;
@@ -272,7 +272,7 @@ export class SmartPage {
   private async findInputElementWithRetry(
     description: string,
     timeout?: number
-  ): Promise<LocatorResult | null> {
+  ): Promise<LocatorResultType | null> {
     const maxRetries = this.options.maxRetries || 3;
     const timeoutMs = timeout || this.options.timeout || 30000;
     const retryDelay = 1000;
@@ -330,7 +330,7 @@ export class SmartPage {
   private async findSelectElementWithRetry(
     description: string,
     timeout?: number
-  ): Promise<LocatorResult | null> {
+  ): Promise<LocatorResultType | null> {
     const maxRetries = this.options.maxRetries || 3;
     const timeoutMs = timeout || this.options.timeout || 30000;
     const retryDelay = 1000;

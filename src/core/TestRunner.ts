@@ -1,104 +1,12 @@
-// src/core/TestRunner.ts
-import { CognitoPage } from "./Types.js";
-
-export interface TestFunction {
-  (page: CognitoPage): Promise<void>;
-}
-
-export interface TestCase {
-  name: string;
-  fn: TestFunction;
-  skip?: boolean;
-  only?: boolean;
-  timeout?: number;
-}
-
-export interface TestSuite {
-  name: string;
-  tests: TestCase[];
-  beforeAll?: () => Promise<void>;
-  afterAll?: () => Promise<void>;
-  beforeEach?: () => Promise<void>;
-  afterEach?: () => Promise<void>;
-}
-
-/**
- * Global test registry - stores all registered tests
- */
-class TestRegistry {
-  private suites: Map<string, TestSuite> = new Map();
-  private currentSuite: TestSuite | null = null;
-  private globalTests: TestCase[] = [];
-
-  registerTest(test: TestCase): void {
-    if (this.currentSuite) {
-      this.currentSuite.tests.push(test);
-    } else {
-      this.globalTests.push(test);
-    }
-  }
-
-  createSuite(name: string): TestSuite {
-    const suite: TestSuite = {
-      name,
-      tests: [],
-    };
-    this.suites.set(name, suite);
-    return suite;
-  }
-
-  setCurrentSuite(suite: TestSuite | null): void {
-    this.currentSuite = suite;
-  }
-
-  getAllTests(): TestCase[] {
-    const allTests: TestCase[] = [...this.globalTests];
-
-    for (const suite of this.suites.values()) {
-      allTests.push(...suite.tests);
-    }
-
-    return allTests;
-  }
-
-  getSuites(): TestSuite[] {
-    return Array.from(this.suites.values());
-  }
-
-  getGlobalTests(): TestCase[] {
-    return this.globalTests;
-  }
-
-  clear(): void {
-    this.suites.clear();
-    this.currentSuite = null;
-    this.globalTests = [];
-  }
-
-  hasOnlyTests(): boolean {
-    return this.getAllTests().some((t) => t.only);
-  }
-
-  getTestsToRun(): TestCase[] {
-    const allTests = this.getAllTests();
-
-    // If there are .only() tests, run only those
-    if (this.hasOnlyTests()) {
-      return allTests.filter((t) => t.only);
-    }
-
-    // Otherwise, run all non-skipped tests
-    return allTests.filter((t) => !t.skip);
-  }
-}
-
+import { TestRegistry } from "./TestRegister.js";
+import { TestFunctionType } from "../types/index.js";
 // Global registry instance
 const registry = new TestRegistry();
 
 /**
  * Main test function - registers a test case
  */
-export function test(name: string, fn: TestFunction): void {
+export function test(name: string, fn: TestFunctionType): void {
   registry.registerTest({
     name,
     fn,
@@ -110,7 +18,7 @@ export function test(name: string, fn: TestFunction): void {
 /**
  * Skip a test
  */
-test.skip = function (name: string, fn: TestFunction): void {
+test.skip = function (name: string, fn: TestFunctionType): void {
   registry.registerTest({
     name,
     fn,
@@ -122,7 +30,7 @@ test.skip = function (name: string, fn: TestFunction): void {
 /**
  * Run only this test (and other .only tests)
  */
-test.only = function (name: string, fn: TestFunction): void {
+test.only = function (name: string, fn: TestFunctionType): void {
   registry.registerTest({
     name,
     fn,
@@ -203,92 +111,6 @@ export function afterEach(fn: () => Promise<void>): void {
   if (registry["currentSuite"]) {
     registry["currentSuite"].afterEach = fn;
   }
-}
-
-/**
- * Expect assertion library (basic implementation)
- */
-export function expect<T>(actual: T) {
-  return {
-    toBe(expected: T): void {
-      if (actual !== expected) {
-        throw new Error(`Expected ${actual} to be ${expected}`);
-      }
-    },
-    toEqual(expected: T): void {
-      if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-        throw new Error(
-          `Expected ${JSON.stringify(actual)} to equal ${JSON.stringify(
-            expected
-          )}`
-        );
-      }
-    },
-    toBeTruthy(): void {
-      if (!actual) {
-        throw new Error(`Expected ${actual} to be truthy`);
-      }
-    },
-    toBeFalsy(): void {
-      if (actual) {
-        throw new Error(`Expected ${actual} to be falsy`);
-      }
-    },
-    toContain(item: any): void {
-      if (Array.isArray(actual)) {
-        if (!actual.includes(item)) {
-          throw new Error(`Expected array to contain ${item}`);
-        }
-      } else if (typeof actual === "string") {
-        if (!actual.includes(item)) {
-          throw new Error(`Expected string to contain ${item}`);
-        }
-      } else {
-        throw new Error("toContain requires array or string");
-      }
-    },
-    toBeGreaterThan(expected: number): void {
-      if (typeof actual !== "number") {
-        throw new Error("toBeGreaterThan requires number");
-      }
-      if (actual <= expected) {
-        throw new Error(`Expected ${actual} to be greater than ${expected}`);
-      }
-    },
-    toBeLessThan(expected: number): void {
-      if (typeof actual !== "number") {
-        throw new Error("toBeLessThan requires number");
-      }
-      if (actual >= expected) {
-        throw new Error(`Expected ${actual} to be less than ${expected}`);
-      }
-    },
-    toThrow(expectedError?: string | RegExp): void {
-      if (typeof actual !== "function") {
-        throw new Error("toThrow requires function");
-      }
-      try {
-        (actual as any)();
-        throw new Error("Expected function to throw");
-      } catch (error: any) {
-        if (expectedError) {
-          if (typeof expectedError === "string") {
-            if (!error.message.includes(expectedError)) {
-              throw new Error(
-                `Expected error message to include "${expectedError}", but got "${error.message}"`
-              );
-            }
-          } else if (expectedError instanceof RegExp) {
-            if (!expectedError.test(error.message)) {
-              throw new Error(
-                `Expected error message to match ${expectedError}, but got "${error.message}"`
-              );
-            }
-          }
-        }
-      }
-    },
-  };
 }
 
 /**

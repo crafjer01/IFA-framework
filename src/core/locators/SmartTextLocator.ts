@@ -1,12 +1,15 @@
 // src/core/locators/SmartTextLocator.ts - FIXED VERSION
 import { Page, ElementHandle } from "@playwright/test";
-import { SmartLocatorOptions, LocatorResult } from "../types/SmartLocator.js";
+import {
+  SmartLocatorOptionsType,
+  LocatorResultType,
+} from "../../types/index.js";
 
 export class SmartTextLocator {
   private page: Page;
   //private _options: SmartLocatorOptions;
 
-  constructor(page: Page, _options: SmartLocatorOptions = {}) {
+  constructor(page: Page, _options: SmartLocatorOptionsType = {}) {
     this.page = page;
     // this._options = {
     //   timeout: _options.timeout || 30000,
@@ -22,7 +25,7 @@ export class SmartTextLocator {
   async findByText(
     description: string,
     options?: { preferInputs?: boolean }
-  ): Promise<LocatorResult | null> {
+  ): Promise<LocatorResultType | null> {
     const strategies = options?.preferInputs
       ? this.getInputStrategies(description)
       : this.getGeneralStrategies(description);
@@ -253,7 +256,7 @@ export class SmartTextLocator {
   private async tryStrategy(
     strategy: any,
     _description: string
-  ): Promise<LocatorResult | null> {
+  ): Promise<LocatorResultType | null> {
     try {
       // If strategy has custom handler, use it
       if (strategy.handler) {

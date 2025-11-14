@@ -1,12 +1,12 @@
 import * as fsExtra from "fs-extra";
 import * as path from "path";
-import { TestResult } from "./Types.js";
+import { TestResultType } from "../types/index.js";
 
 // Determinar el objeto correcto: si fsExtra tiene existsSync, lo usamos; si no, usamos fsExtra.default
 const fs = (fsExtra as any).existsSync ? fsExtra : (fsExtra as any).default;
 
 export class ReportingEngine {
-  private results: TestResult[] = [];
+  private results: TestResultType[] = [];
   private config: any;
 
   constructor(config: any) {
@@ -19,7 +19,7 @@ export class ReportingEngine {
     fs.ensureDirSync("fau-results/screenshots");
   }
 
-  async addResult(result: TestResult): Promise<void> {
+  async addResult(result: TestResultType): Promise<void> {
     this.results.push(result);
   }
 

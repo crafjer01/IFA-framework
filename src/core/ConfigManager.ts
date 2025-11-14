@@ -1,7 +1,7 @@
 // src/core/ConfigManager.ts
 
 import * as fsExtra from "fs-extra";
-import { CognitoConfig } from "./Types.js";
+import { CognitoConfigType } from "../types/index.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -41,7 +41,7 @@ function deepMerge(target: any, source: any): any {
 }
 
 export class ConfigManager {
-  private static defaultConfig: CognitoConfig = {
+  private static defaultConfig: CognitoConfigType = {
     browser: {
       headless: false,
       slowMo: 0,
@@ -88,18 +88,20 @@ export class ConfigManager {
    * Loads configuration from default values, an optional 'fau.config.json' file,
    * and runtime overrides, applying deep merge.
    */
-  static loadConfig(overrides?: Partial<CognitoConfig>): CognitoConfig {
-    let finalConfig: CognitoConfig = { ...this.defaultConfig };
+  static loadConfig(overrides?: Partial<CognitoConfigType>): CognitoConfigType {
+    let finalConfig: CognitoConfigType = { ...this.defaultConfig };
 
     // 1. Check for JSON config file
     const jsonConfigPath = "cognito.config.json";
     if (fs.existsSync(jsonConfigPath)) {
       try {
         const fileContent = fs.readFileSync(jsonConfigPath, "utf-8");
-        const fileConfig = JSON.parse(fileContent) as Partial<CognitoConfig>;
+        const fileConfig = JSON.parse(
+          fileContent
+        ) as Partial<CognitoConfigType>;
 
         // CORRECCIÓN: Usar deep merge para fusionar la configuración del archivo
-        finalConfig = deepMerge(finalConfig, fileConfig) as CognitoConfig;
+        finalConfig = deepMerge(finalConfig, fileConfig) as CognitoConfigType;
 
         console.log("Config file cognito.config.json found and loaded");
       } catch (error) {
@@ -126,7 +128,7 @@ export class ConfigManager {
     // 3. Apply overrides
     if (overrides) {
       // CORRECCIÓN: Usar deep merge para fusionar los overrides
-      finalConfig = deepMerge(finalConfig, overrides) as CognitoConfig;
+      finalConfig = deepMerge(finalConfig, overrides) as CognitoConfigType;
     }
 
     this.validateConfig(finalConfig);
@@ -180,7 +182,7 @@ export default defineConfig({
 });`;
   }
 
-  static validateConfig(config: CognitoConfig): void {
+  static validateConfig(config: CognitoConfigType): void {
     // Basic validation
     if (!config.browser || typeof config.browser.headless !== "boolean") {
       throw new Error("Invalid browser configuration");

@@ -1,18 +1,22 @@
 import { Browser, BrowserContext } from "@playwright/test";
-import { CognitoConfig, TestResult, CognitoPage } from "./Types.js";
+import {
+  CognitoConfigType,
+  TestResultType,
+  CognitoPageType,
+} from "../types/index.js";
 import { ConfigManager } from "./ConfigManager.js";
 import { Logger } from "./Logger.js";
 import { ReportingEngine } from "./ReportingEngine.js";
 import { CognitoPageWrapper } from "./CognitoPageWrapper.js";
 
 export class CognitoEngine {
-  private config: CognitoConfig;
+  private config: CognitoConfigType;
   private logger: Logger;
   private reportingEngine: ReportingEngine;
   private browser?: Browser;
   private context?: BrowserContext;
 
-  constructor(config?: Partial<CognitoConfig>) {
+  constructor(config?: Partial<CognitoConfigType>) {
     this.config = ConfigManager.loadConfig(config);
     this.logger = new Logger(this.config.logging);
     this.reportingEngine = new ReportingEngine(this.config.reporting);
@@ -39,7 +43,7 @@ export class CognitoEngine {
     }
   }
 
-  async newPage(): Promise<CognitoPage> {
+  async newPage(): Promise<CognitoPageType> {
     if (!this.context) {
       throw new Error("Engine not initialized. Call initialize() first.");
     }
@@ -56,11 +60,11 @@ export class CognitoEngine {
   }
 
   async runTest(
-    testFn: (page: CognitoPage) => Promise<void>,
+    testFn: (page: CognitoPageType) => Promise<void>,
     testName: string
-  ): Promise<TestResult> {
+  ): Promise<TestResultType> {
     const startTime = Date.now();
-    let result: TestResult;
+    let result: TestResultType;
 
     try {
       const page = await this.newPage();
@@ -94,9 +98,9 @@ export class CognitoEngine {
   }
 
   async runTestSuite(
-    tests: Array<{ name: string; fn: (page: CognitoPage) => Promise<void> }>
-  ): Promise<TestResult[]> {
-    const results: TestResult[] = [];
+    tests: Array<{ name: string; fn: (page: CognitoPageType) => Promise<void> }>
+  ): Promise<TestResultType[]> {
+    const results: TestResultType[] = [];
 
     this.logger.info(`Running test suite with ${tests.length} tests`);
 
@@ -118,7 +122,7 @@ export class CognitoEngine {
   }
 
   private async captureFailureEvidence(
-    page: CognitoPage,
+    page: CognitoPageType,
     _error: Error
   ): Promise<void> {
     try {
